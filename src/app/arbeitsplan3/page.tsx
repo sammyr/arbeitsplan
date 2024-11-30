@@ -61,7 +61,14 @@ const loadStoreData = async (
 
 export default function Arbeitsplan3Page() {
   // State Management
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => {
+    if (typeof window === 'undefined') return new Date();
+    const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
+    if (!savedDate) return new Date();
+    const parsedDate = new Date(savedDate);
+    return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  });
+
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -71,29 +78,49 @@ export default function Arbeitsplan3Page() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Lade initiale Daten
+  // Save current date to localStorage whenever it changes
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setIsLoading(true);
-        
-        console.log('Loading initial stores...');
-        const loadedStores = await dbService.getStores();
-        console.log('Loaded stores:', loadedStores);
-        setStores(loadedStores);
-        
-        if (loadedStores.length > 0 && !selectedStore) {
-          console.log('Setting initial store:', loadedStores[0]);
-          setSelectedStore(loadedStores[0]);
-        }
-      } catch (error) {
-        console.error('Error loading stores:', error);
-        toast.error('Fehler beim Laden der Filialen');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('arbeitsplan3_currentDate', currentDate.toISOString());
+    }
+  }, [currentDate]);
 
+  // Load saved date and store from localStorage on client-side only
+  useEffect(() => {
+    const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
+    if (savedDate) {
+      setCurrentDate(new Date(savedDate));
+    }
+  }, []);
+
+  // Lade initiale Daten
+  const loadInitialData = async () => {
+    try {
+      setIsLoading(true);
+      
+      console.log('Loading initial stores...');
+      const loadedStores = storage.getStores();
+      setStores(loadedStores);
+      
+      // Load selected store from localStorage if available
+      const savedStoreId = localStorage.getItem('arbeitsplan3_selectedStore');
+      if (savedStoreId) {
+        const savedStore = loadedStores.find(store => store.id === savedStoreId);
+        if (savedStore) {
+          setSelectedStore(savedStore);
+          await loadStoreData(savedStore, setIsLoading, setEmployees, setShifts, setAssignments);
+        }
+      }
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      toast.error('Fehler beim Laden der Daten');
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadInitialData();
   }, []);
 
@@ -108,11 +135,13 @@ export default function Arbeitsplan3Page() {
   });
 
   const handlePreviousMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1));
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
+    setCurrentDate(newDate);
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1));
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1);
+    setCurrentDate(newDate);
   };
 
   const handleDateClick = (date: Date) => {
@@ -147,6 +176,18 @@ export default function Arbeitsplan3Page() {
     } catch (error) {
       console.error('Error saving assignment:', error);
       toast.error('Fehler beim Speichern der Zuweisung');
+    }
+  };
+
+  // Funktion zum Löschen einer Schichtzuweisung
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    try {
+      await dbService.deleteAssignment(assignmentId);
+      setAssignments(prev => prev.filter(a => a.id !== assignmentId));
+      toast.success('Schicht wurde gelöscht');
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast.error('Fehler beim Löschen der Schicht');
     }
   };
 
@@ -211,159 +252,167 @@ export default function Arbeitsplan3Page() {
     }
   };
 
-  // CSS für flüssigere Übergänge
-  const calendarStyles = {
-    minHeight: '800px', // oder eine andere feste Höhe
-    transition: 'all 0.2s ease-in-out'
-  };
-
-  // Optimiere Component Re-Rendering
-  const MemoizedDayCell = memo(({ day, assignments }: { day: Date, assignments: ShiftAssignment[] }) => {
-    const dayStr = format(day, 'yyyy-MM-dd');
-    const dayAssignments = assignments.filter(a => a.date === dayStr);
-    
-    return (
-      <Droppable droppableId={dayStr}>
-        {(provided) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={`min-h-[120px] p-2 rounded border ${
-              isToday(day) ? 'bg-blue-50 border-blue-200' : 'bg-white'
-            }`}
-            onClick={() => handleDateClick(day)}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="text-sm mb-2">{format(day, 'd')}</div>
-            {dayAssignments.map((assignment, index) => {
-              const employee = employees.find(e => e.id === assignment.employeeId);
-              const shift = shifts.find(s => s.id === assignment.shiftId);
-              
-              if (!employee || !shift) return null;
-              
-              return (
-                <Draggable
-                  key={assignment.id}
-                  draggableId={assignment.id}
-                  index={index}
-                >
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className="mb-1 p-1 text-sm bg-blue-100 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {`${employee.firstName} ${employee.lastName} - ${shift.title}`}
-                    </div>
-                  )}
-                </Draggable>
-              );
-            })}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    );
-  });
-
-  // Optimiere Error Boundary
-  const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
-    const [hasError, setHasError] = useState(false);
-
-    if (hasError) {
-      return (
-        <div className="text-red-500 p-4">
-          Es ist ein Fehler aufgetreten. Bitte laden Sie die Seite neu.
-        </div>
-      );
-    }
-
-    return children;
-  };
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
   return (
-    <ErrorBoundary>
-      <div className="p-6">
-        {/* Store-Auswahl */}
-        <div className="mb-6">
-          <select
-            value={selectedStore?.id || ''}
-            onChange={(e) => {
-              const store = stores.find(s => s.id === e.target.value);
-              setSelectedStore(store || null);
-            }}
-            className="w-full max-w-xs rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="">Filiale auswählen</option>
-            {stores.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.name}
-              </option>
-            ))}
-          </select>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h1 className="text-3xl font-bold text-gray-800">
+              Arbeitsplan
+            </h1>
+            <select
+              className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              value={selectedStore?.id || ''}
+              onChange={(e) => {
+                const store = stores.find(s => s.id === e.target.value);
+                setSelectedStore(store || null);
+                // Save selected store ID to localStorage
+                if (store) {
+                  localStorage.setItem('arbeitsplan3_selectedStore', store.id);
+                } else {
+                  localStorage.removeItem('arbeitsplan3_selectedStore');
+                }
+              }}
+            >
+              <option value="">Filiale auswählen</option>
+              {stores.map(store => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Kalender Navigation */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">
-            {format(currentDate, 'MMMM yyyy', { locale: de })}
-          </h2>
-          <div className="flex gap-2">
+        {/* Calendar Navigation */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
             <button
               onClick={handlePreviousMonth}
-              className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ←
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
+            <h2 className="text-xl font-semibold text-gray-800">
+              {format(currentDate, 'MMMM yyyy', { locale: de })}
+            </h2>
             <button
               onClick={handleNextMonth}
-              className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              →
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
-        </div>
 
-        {/* Kalender */}
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div 
-            className="grid grid-cols-7 gap-2"
-            style={calendarStyles}
-          >
-            {/* Wochentage */}
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+            {/* Weekday Headers */}
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
-              <div key={day} className="text-center font-semibold py-2">
+              <div key={day} className="bg-gray-50 p-2 text-center font-medium text-gray-600">
                 {day}
               </div>
             ))}
 
-            {/* Kalendertage */}
-            {daysInMonth.map((day) => (
-              <MemoizedDayCell 
-                key={day.toISOString()} 
-                day={day} 
-                assignments={assignments} 
-              />
-            ))}
+            {/* Calendar Days */}
+            <DragDropContext onDragEnd={handleDragEnd}>
+              {daysInMonth.map((date) => (
+                <Droppable key={format(date, 'yyyy-MM-dd')} droppableId={format(date, 'yyyy-MM-dd')}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`
+                        min-h-[120px] p-2 bg-white
+                        ${!isSameMonth(date, currentDate) ? 'bg-gray-50' : ''}
+                        ${isToday(date) ? 'ring-2 ring-blue-500' : ''}
+                        hover:bg-gray-50 transition-colors cursor-pointer
+                      `}
+                      onClick={() => handleDateClick(date)}
+                    >
+                      <div className={`
+                        text-sm font-medium mb-2
+                        ${!isSameMonth(date, currentDate) ? 'text-gray-400' : 'text-gray-700'}
+                      `}>
+                        {format(date, 'd')}
+                      </div>
+                      
+                      {/* Assignments */}
+                      <div className="space-y-1">
+                        {assignments
+                          .filter(a => a.date === format(date, 'yyyy-MM-dd'))
+                          .map((assignment, index) => {
+                            const employee = employees.find(e => e.id === assignment.employeeId);
+                            const shift = shifts.find(s => s.id === assignment.shiftId);
+                            
+                            return (
+                              <Draggable
+                                key={assignment.id}
+                                draggableId={assignment.id}
+                                index={index}
+                              >
+                                {(provided) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className="group relative p-1.5 bg-blue-50 text-blue-700 text-xs rounded-md hover:bg-blue-100 transition-colors"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span>
+                                        {employee?.firstName} {employee?.lastName} {shift?.title}
+                                      </span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteAssignment(assignment.id);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 text-red-500 hover:text-red-700 rounded transition-opacity"
+                                        title="Schicht löschen"
+                                      >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                        })}
+                        {provided.placeholder}
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
+              ))}
+            </DragDropContext>
           </div>
-        </DragDropContext>
+        </div>
+      </div>
 
-        {/* Schichtzuweisung Modal */}
+      {/* Loading Spinner */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <LoadingSpinner />
+        </div>
+      )}
+
+      {/* Modal */}
+      {isModalOpen && selectedDate && (
         <ShiftAssignmentModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleAssignmentSave}
           employees={employees}
           shifts={shifts}
-          date={selectedDate || new Date()}
+          date={selectedDate}
         />
-      </div>
-    </ErrorBoundary>
+      )}
+    </div>
   );
 }

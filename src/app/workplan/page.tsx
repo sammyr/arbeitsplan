@@ -3,20 +3,22 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, dateFnsLocalizer, ToolbarProps, Event as BigCalendarEvent, View, stringOrDate } from 'react-big-calendar';
 import withDragAndDrop, { withDragAndDropProps, EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop';
-import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { format, parse, startOfWeek, getDay, addMonths } from 'date-fns';
 import { de } from 'date-fns/locale';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useStore } from '@/lib/store';
-import { dbService } from '@/lib/db';
-import WorkplanForm from './WorkplanForm';
-import { storage } from '@/utils/storage';
-import AlertBar from '@/components/AlertBar';
-import { FaClock, FaUser, FaCalendar } from 'react-icons/fa'; // Import icons
 import { Employee } from '@/types/employee';
 import { Shift } from '@/types/shift';
-import { WorkingShift } from '@/types/working-shift';
+import { WorkingShift } from '@/types';
+import { CalendarEvent } from '@/types/calendar';
+import { useStore } from '@/lib/store';
+import { dbService } from '@/lib/db';
+import { storage } from '@/lib/storage';
+import WorkplanForm from './WorkplanForm';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import AlertBar from '@/components/AlertBar';
+import { FaClock, FaUser, FaCalendar } from 'react-icons/fa';
 import { Store } from '@/types/store';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 
 // Custom hook for alert management
 const useAlert = () => {
@@ -41,21 +43,6 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales: { de },
 });
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  employeeId: string;
-  shiftId: string;
-  storeId: string;
-  extendedProps: {
-    shift: Shift;
-    employee: Employee;
-    workingShift: WorkingShift;
-  };
-}
 
 const DnDCalendar = withDragAndDrop<CalendarEvent>(Calendar<CalendarEvent>);
 
@@ -107,7 +94,9 @@ const WorkplanPage = () => {
   const { selectedStore, setSelectedStore } = useStore();
   const [stores, setStores] = useState<Store[]>([]);
   const [date, setDate] = useState(new Date());
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [workingShifts, setWorkingShifts] = useState<WorkingShift[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { alert, showAlert, setAlert } = useAlert();
 
   // Monitor events changes
@@ -175,7 +164,7 @@ const WorkplanPage = () => {
       console.log('Fetched shifts:', shifts.length);  // Check if shifts are fetched
       return shifts.map(shift => {
         const employee = employees.find(e => e.id === shift.employeeId);
-        const workingShift = storage.getShifts().find(ws => ws.id === shift.shiftId);
+        const workingShift = workingShifts.find(ws => ws.id === shift.shiftId);
         
         if (!employee || !workingShift) {
           console.error('Missing data:', { employee, workingShift, shift });
@@ -214,7 +203,7 @@ const WorkplanPage = () => {
       showAlert('Fehler beim Laden der Schichten', 'error');
       return [];
     }
-  }, [selectedStore?.id, employees, showAlert]);
+  }, [selectedStore?.id, employees, workingShifts, showAlert]);
 
   const refreshShifts = useCallback(async () => {
     console.log('refreshShifts called');  // Check if refresh is called
@@ -236,7 +225,7 @@ const WorkplanPage = () => {
       
       const processedShifts = shifts.map(shift => {
         const employee = employees.find(e => e.id === shift.employeeId);
-        const workingShift = storage.getShifts().find(ws => ws.id === shift.shiftId);
+        const workingShift = workingShifts.find(ws => ws.id === shift.shiftId);
         
         if (!employee || !workingShift) {
           console.log('Skipping shift due to missing data:', {
@@ -279,7 +268,7 @@ const WorkplanPage = () => {
       console.error('Error refreshing shifts:', error);
       showAlert('Fehler beim Laden der Schichten', 'error');
     }
-  }, [selectedStore, employees, showAlert, events, safeSetEvents]);
+  }, [selectedStore, employees, workingShifts, showAlert, events, safeSetEvents]);
 
   const handleEventDrop = useCallback(async (args: EventInteractionArgs<CalendarEvent>) => {
     console.log('handleEventDrop called');  // Check if function is called
@@ -460,29 +449,29 @@ const WorkplanPage = () => {
     setSelectedStore(store || null);
   }, [stores, setSelectedStore]);
 
-  const handleEventClick = useCallback((event: any) => {
+  const handleEventClick = useCallback((event: CalendarEvent) => {
     console.log('handleEventClick called');  // Check if function is called
-    const shift = event.extendedProps?.shift;
+    if (!selectedStore) {
+      console.log('No store selected');
+      return;
+    }
+
+    // Find the shift data
+    const shift = event.extendedProps.shift;
     if (!shift) {
       console.error('No shift data found in event');
       return;
     }
 
-    if (!selectedStore) {
-      console.error('No store selected');
-      return;
-    }
-
     // Find the employee and working shift
     const employee = employees.find(e => e.id === shift.employeeId);
-    const workingShift = storage.getShifts().find(ws => ws.id === shift.shiftId);
+    const workingShift = workingShifts.find(ws => ws.id === shift.shiftId);
 
     if (!employee || !workingShift) {
       console.error('Missing data:', { employee, workingShift, shift });
       return;
     }
 
-    // Format the title to include employee name and shift type
     const title = `${employee.firstName} ${employee.lastName} - ${workingShift.title}`;
     
     setSelectedEvent({
@@ -497,12 +486,15 @@ const WorkplanPage = () => {
         shift,
         employee,
         workingShift
-      }
+      },
+      shift,
+      employee,
+      workingShift
     });
     
     setSelectedDate(event.start!);
     setIsFormOpen(true);
-  }, [selectedStore, employees, setSelectedEvent, setSelectedDate, setIsFormOpen]);
+  }, [selectedStore, employees, workingShifts, setSelectedEvent, setSelectedDate, setIsFormOpen]);
 
   const handleSelectSlot = useCallback(({ start }: { start: Date }) => {
     console.log('handleSelectSlot called');  // Check if function is called
@@ -586,7 +578,7 @@ const WorkplanPage = () => {
 
       // Find the employee and working shift for the updated event
       const employee = employees.find(e => e.id === newShiftData.employeeId);
-      const workingShift = storage.getShifts().find(ws => ws.id === newShiftData.shiftId);
+      const workingShift = workingShifts.find(ws => ws.id === newShiftData.shiftId);
 
       if (!employee || !workingShift) {
         throw new Error('Mitarbeiter oder Schicht nicht gefunden');
@@ -622,7 +614,7 @@ const WorkplanPage = () => {
       showAlert('Fehler beim Aktualisieren der Schicht: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'), 'error');
       throw error; // Re-throw to be handled by the form
     }
-  }, [selectedStore, employees, setEvents, showAlert]);
+  }, [selectedStore, employees, workingShifts, setEvents, showAlert]);
 
   const handleCreateShift = useCallback(async (shiftData: Partial<Shift>) => {
     console.log('handleCreateShift called');  // Check if function is called
@@ -666,12 +658,15 @@ const WorkplanPage = () => {
         end: shiftDate,
         employeeId: createdShift.employeeId,
         shiftId: createdShift.shiftId,
-        storeId: selectedStore.id,
+        storeId: createdShift.storeId,
         extendedProps: {
           shift: createdShift,
           employee,
           workingShift: shift
-        }
+        },
+        shift: createdShift,
+        employee,
+        workingShift: shift
       };
 
       setEvents(prev => [...prev, newEvent]);
@@ -757,17 +752,9 @@ const WorkplanPage = () => {
         }
 
         // Load working shifts from storage
-        const workingShiftsData = storage.getShifts();
+        const loadedWorkingShifts = await storage.getShifts();
         if (isMounted) {
-          setWorkingShifts(
-            workingShiftsData
-              .filter((shift): shift is WorkingShift => 
-                Boolean(shift && shift.id && shift.title))
-              .map(shift => ({
-                ...shift,
-                storeId: shift.storeId?.toString() || ''
-              }))
-          );
+          setWorkingShifts(loadedWorkingShifts);
         }
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -788,54 +775,95 @@ const WorkplanPage = () => {
     console.log('useEffect called');  // Check if effect is called
     let isMounted = true;
 
-    async function fetchShifts() {
+    const loadShifts = async () => {
       if (!selectedStore?.id || !isMounted) return;
 
       try {
-        const shifts = await dbService.getShifts(selectedStore.id);
+        setIsLoading(true);
+        const loadedShifts = await dbService.getShifts(selectedStore.id);
         if (!isMounted) return;
 
-        const processedEvents = shifts.map((shift): CalendarEvent | null => {
-          if (!shift) return null;
-
-          const employee = employees.find(e => e.id === shift.employeeId);
-          const workingShift = storage.getShifts().find(ws => ws.id === shift.shiftId);
-
-          if (!employee || !workingShift) return null;
-
-          const start = shift.date ? new Date(shift.date) : new Date();
-
-          return {
-            id: shift.id,
-            title: getShiftLabel(shift, employee, workingShift),
-            start: start,
-            end: start,
-            employeeId: shift.employeeId,
-            shiftId: shift.shiftId,
-            storeId: shift.storeId,
-            extendedProps: {
-              shift: workingShift,
-              employee,
-              workingShift
-            }
-          };
-        }).filter((event): event is CalendarEvent => event !== null);
-
-        setEvents(processedEvents);
+        setShifts(loadedShifts);
+        setIsLoading(false);
       } catch (error) {
-        console.error('Error fetching shifts:', error);
+        console.error('Error loading shifts:', error);
         if (isMounted) {
           showAlert('Fehler beim Laden der Schichten', 'error');
         }
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchShifts();
+    loadShifts();
 
     return () => {
       isMounted = false;
     };
-  }, [selectedStore?.id, employees, showAlert]);
+  }, [selectedStore?.id, showAlert]);
+
+  const transformShiftsToEvents = useCallback((shifts: Shift[]): CalendarEvent[] => {
+    return shifts.map(shift => {
+      const employee = employees.find(e => e.id === shift.employeeId);
+      const workingShift = workingShifts.find(ws => ws.id === shift.shiftId);
+
+      if (!employee || !workingShift) {
+        console.error('Missing data:', { employee, workingShift, shift });
+        return null;
+      }
+
+      const shiftDate = new Date(shift.date);
+      const title = getShiftLabel(shift, employee, workingShift);
+
+      return {
+        id: shift.id,
+        title,
+        start: shiftDate,
+        end: shiftDate,
+        employeeId: shift.employeeId,
+        shiftId: shift.shiftId,
+        storeId: shift.storeId,
+        extendedProps: {
+          shift,
+          employee,
+          workingShift
+        },
+        shift,
+        employee,
+        workingShift
+      };
+    }).filter((event): event is CalendarEvent => event !== null);
+  }, [selectedStore?.id, employees, workingShifts]);
+
+  useEffect(() => {
+    console.log('useEffect called');  // Check if effect is called
+    let isMounted = true;
+
+    const loadShifts = async () => {
+      if (!selectedStore?.id || !isMounted) return;
+
+      try {
+        setIsLoading(true);
+        const loadedShifts = await dbService.getShifts(selectedStore.id);
+        if (!isMounted) return;
+
+        const processedEvents = transformShiftsToEvents(loadedShifts);
+        setEvents(processedEvents);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading shifts:', error);
+        if (isMounted) {
+          showAlert('Fehler beim Laden der Schichten', 'error');
+        }
+        setIsLoading(false);
+      }
+    };
+
+    loadShifts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedStore?.id, transformShiftsToEvents, showAlert]);
 
   return (
     <div className="h-full p-4 bg-gray-50 max-w-[95vw] mx-auto">
@@ -898,9 +926,15 @@ const WorkplanPage = () => {
         </div>
       ) : (
         <>
-          <DnDCalendar
-            {...calendarOptions}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <DnDCalendar
+              {...calendarOptions}
+            />
+          )}
 
           {isFormOpen && selectedStore && (
             <WorkplanForm

@@ -1,364 +1,164 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useState, useEffect, useMemo } from 'react';
-import { dbService } from '@/lib/db';
-import { Employee } from '@/types/employee';
-import { Shift } from '@/types/shift';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { storage } from '@/lib/storage';
-import { WorkingShift } from '@/types';
-import { Store } from '@/types/store';
+import { CalendarEvent } from '@/types/calendar';
+import { Shift } from '@/types/shift';
 
-interface Event {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  storeId: string;
-  employeeId: string;
-  shiftId: string;
-  extendedProps: {
-    shift: any;
-    employee: any;
-    workingShift: any;
-  };
+interface WorkplanFormData {
+  date: string;
+  shift: string;
+  employeeName: string;
+  store: string;
 }
 
 interface WorkplanFormProps {
   isOpen: boolean;
-  event: Event | null;
+  event: CalendarEvent | null;
   storeId: string;
   onClose: () => void;
   selectedDate: Date | null;
-  onCreate: (shiftData: any) => Promise<void>;
+  onCreate: (shiftData: Partial<Shift>) => Promise<void>;
   onUpdate: (oldShift: any, newShiftData: any, newWorkingShift: any) => Promise<void>;
 }
 
-interface FormData {
-  employeeId: string;
-  shiftId: string;
-  date: string;
-  storeId: string;
-}
-
-export default function WorkplanForm({ 
-  isOpen, 
-  event, 
-  storeId: initialStoreId, 
-  onClose, 
+export default function WorkplanForm({
+  isOpen,
+  event,
+  storeId,
+  onClose,
   selectedDate,
   onCreate,
-  onUpdate 
+  onUpdate
 }: WorkplanFormProps) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [workingShifts, setWorkingShifts] = useState<WorkingShift[]>([]);
-  const [stores, setStores] = useState<Store[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<WorkplanFormData>();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    setError,
-    watch,
-  } = useForm<FormData>({
-    defaultValues: {
-      storeId: initialStoreId,
-      date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined,
-    }
-  });
-
-  const selectedStore = watch('storeId');
-  const selectedShift = watch('shiftId');
-
-  const sortedEmployees = useMemo(() => {
-    return employees
-      .filter(emp => emp && emp.firstName && emp.lastName) // Filter out invalid employees
-      .sort((a, b) => {
-        const nameA = `${a.lastName}, ${a.firstName}`;
-        const nameB = `${b.lastName}, ${b.firstName}`;
-        return nameA.localeCompare(nameB, 'de');
-      });
-  }, [employees]);
-
-  const sortedShifts = useMemo(() => {
-    return workingShifts
-      .filter(shift => shift && shift.title)
-      .sort((a, b) => {
-        return a.title.localeCompare(b.title, 'de');
-      });
-  }, [workingShifts]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function fetchData() {
-      try {
-        // Lade Stores
-        const storedStores = storage.getStores();
-        if (mounted) {
-          setStores(storedStores);
-        }
-
-        // Get shifts from storage first
-        const storedShifts = await storage.getShifts();
-        const filteredShifts = storedShifts.filter(shift =>
-          !selectedStore || shift.storeId === selectedStore || !shift.storeId
-        );
-
-        // Get employees from database
-        const employeesData = await dbService.getEmployees();
-        
-        if (!mounted) return;
-
-        // Process stores first
-        if (!storedStores?.length) {
-          setError('storeId', {
-            type: 'manual',
-            message: 'Keine Filialen verfügbar. Bitte fügen Sie zuerst eine Filiale hinzu.'
-          });
-          setStores([]);
-        }
-
-        // Process employees
-        if (!employeesData?.length) {
-          setError('employeeId', { 
-            type: 'manual', 
-            message: 'Keine Mitarbeiter verfügbar. Bitte fügen Sie zuerst Mitarbeiter hinzu.' 
-          });
-          setEmployees([]);
-        } else {
-          setEmployees(employeesData
-            .filter(emp => emp && emp.id && emp.firstName && emp.lastName)
-            .map(emp => ({
-              ...emp,
-              id: emp.id.toString()
-            }))
-          );
-        }
-
-        // Process shifts
-        if (!filteredShifts?.length) {
-          setError('shiftId', {
-            type: 'manual',
-            message: 'Keine Schichten verfügbar. Bitte fügen Sie zuerst Schichten hinzu.'
-          });
-          setWorkingShifts([]);
-        } else {
-          setWorkingShifts(filteredShifts
-            .filter(shift => shift && shift.id && shift.title)
-            .map(shift => ({
-              ...shift,
-              id: shift.id.toString(),
-              storeId: shift.storeId || selectedStore
-            }))
-          );
-        }
-
-        // Set initial values if editing and event exists
-        if (event && mounted) {
-          const employeeExists = employeesData?.some(e => e.id.toString() === event.employeeId.toString());
-          const shiftExists = filteredShifts?.some(s => s.id.toString() === event.shiftId.toString());
-          const storeExists = storedStores?.some(s => s.id.toString() === event.storeId.toString());
-          
-          if (employeeExists && shiftExists && storeExists) {
-            setValue('employeeId', event.employeeId.toString());
-            setValue('shiftId', event.shiftId.toString());
-            setValue('storeId', event.storeId.toString());
-          } else {
-            setError('root', {
-              type: 'manual',
-              message: 'Die ausgewählten Daten sind nicht mehr verfügbar.'
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching form data:', error);
-        setError('root', {
-          type: 'manual',
-          message: error instanceof Error ? error.message : 'Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.'
-        });
-      }
-    }
-
-    fetchData();
-    return () => { mounted = false; };
-  }, [event, setValue, setError, selectedStore]);
-
-  const onSubmit = async (data: FormData) => {
-    setIsSubmitting(true);
+  const onSubmit = async (data: WorkplanFormData) => {
     try {
-      if (!selectedDate) {
-        throw new Error('Kein Datum ausgewählt');
-      }
-
-      // Ensure employee ID is a string and exists
-      const employeeId = data.employeeId.toString();
-      const employee = employees.find(e => e.id.toString() === employeeId);
-      if (!employee) {
-        throw new Error('Ausgewählter Mitarbeiter wurde nicht gefunden');
-      }
-
-      // Ensure shift exists
-      const workingShift = workingShifts.find(ws => ws.id.toString() === data.shiftId.toString());
-      if (!workingShift) {
-        throw new Error('Ausgewählte Schicht wurde nicht gefunden');
-      }
-
-      // Verify employee still exists in database
-      const employeeExists = await dbService.getEmployee(employeeId);
-      if (!employeeExists) {
-        throw new Error('Der ausgewählte Mitarbeiter existiert nicht mehr in der Datenbank');
-      }
-
-      // Check for overlapping shifts
-      const existingShifts = await dbService.getShiftsByStore(selectedStore);
-      const overlappingShift = existingShifts.find(shift => {
-        if (event && shift.id === event.id) return false; // Exclude current shift if editing
-        if (shift.employeeId !== employeeId) return false;
-        if (shift.date !== format(selectedDate, 'yyyy-MM-dd')) return false;
-        
-        return true;
+      await addDoc(collection(db, 'workplan'), {
+        ...data,
+        createdAt: new Date(),
       });
-
-      if (overlappingShift) {
-        throw new Error('Der Mitarbeiter hat bereits eine Schicht in diesem Zeitraum');
-      }
-
-      // Create shift data object
-      const shiftData = {
-        id: event?.id || crypto.randomUUID(),
-        employeeId: employeeId,
-        shiftId: data.shiftId,
-        storeId: selectedStore,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        title: `${employee.firstName} ${employee.lastName} - ${workingShift.title}`,
-        employee: employee,
-        workingShift: workingShift
-      };
-
-      if (event) {
-        await onUpdate(event, shiftData, workingShift);
-      } else {
-        await onCreate(shiftData);
-      }
-
-      onClose();
+      reset();
     } catch (error) {
-      console.error('Error submitting form:', error);
-      setError('root', {
-        type: 'manual',
-        message: error instanceof Error ? error.message : 'Ein unerwarteter Fehler ist aufgetreten'
-      });
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error adding document: ', error);
     }
   };
 
-  const formContent = useMemo(() => (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <label htmlFor="storeId" className="block text-sm font-medium text-gray-700">
-          Filiale
-        </label>
-        <select
-          id="storeId"
-          {...register('storeId', { required: 'Bitte wählen Sie eine Filiale aus' })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        >
-          {stores.map((store) => (
-            <option key={store.id} value={store.id}>
-              {store.name}
-            </option>
-          ))}
-        </select>
-        {errors.storeId && (
-          <p className="mt-1 text-sm text-red-600">{errors.storeId.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Mitarbeiter
-        </label>
-        <select
-          {...register('employeeId', { required: 'Bitte wählen Sie einen Mitarbeiter aus' })}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.employeeId ? 'border-red-500' : ''
-          }`}
-        >
-          <option value="">Mitarbeiter auswählen</option>
-          {sortedEmployees.map(employee => (
-            <option key={employee.id} value={employee.id}>
-              {`${employee.lastName}, ${employee.firstName}`}
-            </option>
-          ))}
-        </select>
-        {errors.employeeId && (
-          <p className="mt-1 text-sm text-red-500">{errors.employeeId.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Schicht
-        </label>
-        <select
-          {...register('shiftId', { required: 'Bitte wählen Sie eine Schicht aus' })}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.shiftId ? 'border-red-500' : ''
-          }`}
-        >
-          <option value="">Schicht auswählen</option>
-          {sortedShifts.map(shift => (
-            <option key={shift.id} value={shift.id}>
-              {shift.title}
-            </option>
-          ))}
-        </select>
-        {errors.shiftId && (
-          <p className="mt-1 text-sm text-red-500">{errors.shiftId.message}</p>
-        )}
-      </div>
-
-      {errors.root && (
-        <p className="text-sm text-red-500">{errors.root.message}</p>
-      )}
-
-      <div className="flex justify-end space-x-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Abbrechen
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {isSubmitting ? 'Wird gespeichert...' : event ? 'Aktualisieren' : 'Erstellen'}
-        </button>
-      </div>
-    </form>
-  ), [register, handleSubmit, onSubmit, errors, onClose, isSubmitting, event, sortedEmployees, sortedShifts]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
-        <div className="relative bg-white rounded-lg p-8 max-w-lg w-full">
-          <h2 className="text-lg font-medium mb-4">
-            {event ? 'Schicht bearbeiten' : 'Neue Schicht erstellen'}
-          </h2>
-          {formContent}
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow-2xl rounded-xl overflow-hidden border border-gray-100">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-6 py-5">
+            <h2 className="text-2xl font-bold text-white text-center tracking-wide">
+              Neue Schicht planen
+            </h2>
+          </div>
+          
+          {/* Form Fields */}
+          <div className="p-8 space-y-6">
+            {/* Datum */}
+            <div className="form-group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Datum
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  {...register('date', { required: 'Datum ist erforderlich' })}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200 bg-gray-50 hover:bg-white"
+                />
+              </div>
+              {errors.date && (
+                <p className="mt-2 text-sm text-red-500 font-medium">{errors.date.message}</p>
+              )}
+            </div>
+
+            {/* Schicht */}
+            <div className="form-group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Schicht
+              </label>
+              <div className="relative">
+                <select
+                  {...register('shift', { required: 'Schicht ist erforderlich' })}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200 bg-gray-50 hover:bg-white appearance-none"
+                >
+                  <option value="">Schicht auswählen</option>
+                  <option value="Früh">Früh (06:00 - 14:00)</option>
+                  <option value="Spät">Spät (14:00 - 22:00)</option>
+                  <option value="Nacht">Nacht (22:00 - 06:00)</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              {errors.shift && (
+                <p className="mt-2 text-sm text-red-500 font-medium">{errors.shift.message}</p>
+              )}
+            </div>
+
+            {/* Mitarbeiter */}
+            <div className="form-group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Mitarbeiter
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  {...register('employeeName', { required: 'Mitarbeitername ist erforderlich' })}
+                  placeholder="Name des Mitarbeiters"
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200 bg-gray-50 hover:bg-white"
+                />
+              </div>
+              {errors.employeeName && (
+                <p className="mt-2 text-sm text-red-500 font-medium">{errors.employeeName.message}</p>
+              )}
+            </div>
+
+            {/* Filiale */}
+            <div className="form-group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filiale
+              </label>
+              <div className="relative">
+                <select
+                  {...register('store', { required: 'Filiale ist erforderlich' })}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200 bg-gray-50 hover:bg-white appearance-none"
+                >
+                  <option value="">Filiale auswählen</option>
+                  <option value="Berlin Mitte">Berlin Mitte</option>
+                  <option value="Berlin Nord">Berlin Nord</option>
+                  <option value="Berlin Süd">Berlin Süd</option>
+                  <option value="Berlin Ost">Berlin Ost</option>
+                  <option value="Berlin West">Berlin West</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              {errors.store && (
+                <p className="mt-2 text-sm text-red-500 font-medium">{errors.store.message}</p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:via-blue-800 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              Schicht hinzufügen
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

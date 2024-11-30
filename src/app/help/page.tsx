@@ -25,7 +25,7 @@ export default function HelpPage() {
           <h2 className="text-2xl font-semibold mb-4">Demnächst</h2>
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
             <ul className="list-disc pl-5 text-gray-700 space-y-2">
-              <li>PDF Download - Arbeitsplan als PDF exportieren</li>
+              <li>PDF Download - Arbeitsplan ausdrucken und als PDF exportieren</li>
               <li>Logo Upload - Eigenes Firmenlogo hochladen und verwenden</li>
               <li>Arbeitsplan an alle Mitarbeiter senden</li>
               <li>Erweiterte Benachrichtigungen:

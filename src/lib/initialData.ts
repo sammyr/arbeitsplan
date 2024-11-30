@@ -5,19 +5,19 @@ import { WorkingShift } from '@/types';
 export const initialStores: Store[] = [
   {
     id: '1',
-    name: 'Hauptfiliale',
-    address: 'Hauptstraße 1, 12345 Stadt',
+    name: 'Goßen',
+    address: 'Goßen Straße 1',
     phone: '+49 123 456789',
-    email: 'hauptfiliale@example.com',
+    email: 'gossen@example.com',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
   {
     id: '2',
-    name: 'Zweigstelle',
-    address: 'Nebenstraße 2, 12345 Stadt',
+    name: 'Erkner',
+    address: 'Erkner Straße 1',
     phone: '+49 123 456780',
-    email: 'zweigstelle@example.com',
+    email: 'erkner@example.com',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }

@@ -349,3 +349,23 @@ select[multiple] option:hover {
 .mobile-menu-overlay {
   backdrop-filter: blur(4px);
 }
+
+/* New CSS rule for text-xs */
+.text-xs {
+  font-size: 0.85rem;
+  line-height: 1.1rem;
+  text-align: center;
+  padding: 5px;
+}
+
+.min-h-full {
+  min-height: auto;;
+}
+
+.fixed.inset-0 {
+
+  background-color: rgba(0, 0, 0, 0.0) !important;
+  -webkit-backdrop-filter: blur(1px) !important;
+  backdrop-filter: blur(1px) !important;
+
+}
