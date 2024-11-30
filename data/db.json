@@ -1,0 +1,989 @@
+{
+  "employees": [
+    {
+      "id": "2",
+      "name": "Anna Schmidt",
+      "role": "Verkäufer",
+      "email": "anna@example.com"
+    },
+    {
+      "id": "3",
+      "name": "Lisa Weber",
+      "role": "Verkäufer",
+      "email": "lisa@example.com"
+    },
+    {
+      "id": "1",
+      "name": "Max Mustermann",
+      "role": "Manager",
+      "email": "max@example.com"
+    },
+    {
+      "id": "4",
+      "name": "Silvia",
+      "email": "silvia@dsdm.de",
+      "phone": "0121"
+    }
+  ],
+  "stores": [
+    {
+      "id": "1",
+      "name": "Hauptfiliale",
+      "address": "Hauptstraße 1, 10115 Berlin"
+    },
+    {
+      "id": "2",
+      "name": "Filiale Nord",
+      "address": "Nordstraße 25, 13359 Berlin"
+    }
+  ],
+  "shifts": [
+    {
+      "id": "1",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-10-29",
+      "startTime": "06:00",
+      "endTime": "14:00"
+    },
+    {
+      "id": "2",
+      "storeId": 1,
+      "employeeId": 3,
+      "date": "2024-10-30",
+      "startTime": "06:00",
+      "endTime": "14:00"
+    },
+    {
+      "id": "3",
+      "storeId": 2,
+      "employeeId": 2,
+      "date": "2024-10-31",
+      "startTime": "06:00",
+      "endTime": "14:00"
+    },
+    {
+      "id": "4",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-05",
+      "startTime": "06:00",
+      "endTime": "14:00"
+    },
+    {
+      "id": "5",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-06",
+      "startTime": "06:00",
+      "endTime": "14:00"
+    },
+    {
+      "id": "6",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-08",
+      "startTime": "06:00",
+      "endTime": "14:00"
+    },
+    {
+      "id": "7",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-10-28",
+      "startTime": "22:00",
+      "endTime": "06:00"
+    },
+    {
+      "id": "8",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-01",
+      "startTime": "01:20",
+      "endTime": "17:00"
+    },
+    {
+      "id": "9",
+      "storeId": 1,
+      "employeeId": 2,
+      "date": "2024-11-14",
+      "startTime": "01:20",
+      "endTime": "17:00"
+    },
+    {
+      "id": "10",
+      "storeId": 1,
+      "employeeId": 2,
+      "date": "2024-10-31",
+      "startTime": "01:20",
+      "endTime": "17:00"
+    },
+    {
+      "id": "11",
+      "storeId": 1,
+      "employeeId": 2,
+      "date": "2024-11-20",
+      "startTime": "16:00",
+      "endTime": "02:00"
+    },
+    {
+      "id": "12",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-19",
+      "startTime": "01:20",
+      "endTime": "17:00"
+    },
+    {
+      "id": "13",
+      "storeId": 1,
+      "employeeId": 2,
+      "date": "2024-11-22",
+      "startTime": "01:20",
+      "endTime": "17:00"
+    },
+    {
+      "id": "14",
+      "storeId": 1,
+      "employeeId": 2,
+      "date": "2024-11-15",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "15",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-17",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "16",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-24",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "17",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-12",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "18",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-27",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "19",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-16",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "20",
+      "storeId": 1,
+      "employeeId": 2,
+      "date": "2024-11-02",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "21",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-04",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "22",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-21",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "23",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-21",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "24",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-10-30",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "25",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-29",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "26",
+      "storeId": "1",
+      "employeeId": "1",
+      "date": "2024-11-29",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "27",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-06",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "28",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-07",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "29",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-09",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "30",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-03",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "31",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-13",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "32",
+      "storeId": "1",
+      "employeeId": "1",
+      "date": "2024-12-03",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "33",
+      "storeId": 1,
+      "employeeId": 3,
+      "date": "2024-10-29",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "34",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-10",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "35",
+      "storeId": 1,
+      "employeeId": 1,
+      "date": "2024-11-25",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "36",
+      "storeId": 1,
+      "employeeId": 2,
+      "date": "2024-11-19",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "37",
+      "storeId": 57604,
+      "employeeId": 1,
+      "date": "2024-10-28",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "38",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-11-07",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "39",
+      "storeId": 57604,
+      "employeeId": "1",
+      "date": "2024-11-06",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "40",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-11-08",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "41",
+      "storeId": 12,
+      "employeeId": 3,
+      "date": "2024-11-06",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "42",
+      "storeId": 12,
+      "employeeId": 3,
+      "date": "2024-11-19",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "43",
+      "storeId": "12d43dfb-870c-484a-b54c-99fac3734e9a",
+      "employeeId": "4",
+      "date": "2024-11-29",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "44",
+      "storeId": 57604,
+      "employeeId": "1",
+      "date": "2024-11-13",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "45",
+      "storeId": 57604,
+      "employeeId": 4,
+      "date": "2024-11-01",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "46",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "3",
+      "date": "2024-11-15",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "47",
+      "storeId": 57604,
+      "employeeId": 1,
+      "date": "2024-10-30",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "48",
+      "storeId": 57604,
+      "employeeId": 1,
+      "date": "2024-11-02",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "49",
+      "storeId": 57604,
+      "employeeId": 1,
+      "date": "2024-11-24",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "50",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-11-08",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "51",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-11-14",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "52",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-11-12",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "53",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-10-30",
+      "startTime": "01:20",
+      "endTime": "17:00"
+    },
+    {
+      "id": "54",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "3",
+      "date": "2024-11-13",
+      "startTime": "01:20",
+      "endTime": "17:00"
+    },
+    {
+      "id": "55",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "3",
+      "date": "2024-11-06",
+      "startTime": "16:00",
+      "endTime": "02:00"
+    },
+    {
+      "id": "57",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-10-29",
+      "startTime": "16:00",
+      "endTime": "02:00"
+    },
+    {
+      "id": "58",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "3",
+      "date": "2024-11-14",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "59",
+      "storeId": 57604,
+      "employeeId": "3",
+      "date": "2024-11-04",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "60",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "4",
+      "date": "2024-11-21",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "61",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-05",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "62",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-27",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "63",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "3",
+      "date": "2024-10-30",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "64",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "3",
+      "date": "2024-11-08",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "65",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-10",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "66",
+      "storeId": "12d43dfb-870c-484a-b54c-99fac3734e9a",
+      "employeeId": "2",
+      "date": "2024-11-15",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "67",
+      "storeId": 12,
+      "employeeId": "3",
+      "date": "2024-11-21",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "68",
+      "storeId": 57604,
+      "employeeId": "3",
+      "date": "2024-11-09",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "69",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-20",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "70",
+      "storeId": 57604,
+      "employeeId": "3",
+      "date": "2024-11-30",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "71",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-25",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "72",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-18",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "73",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "1",
+      "date": "2024-11-22",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "74",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "4",
+      "date": "2024-11-29",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "75",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-11-21",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "76",
+      "storeId": "12d43dfb-870c-484a-b54c-99fac3734e9a",
+      "employeeId": "4",
+      "date": "2024-11-27",
+      "startTime": "02:00",
+      "endTime": "03:00",
+      "shiftId": "c2e18bf9-9ea0-45f4-af6d-1f6443f6b12a"
+    },
+    {
+      "id": "77",
+      "storeId": "12d43dfb-870c-484a-b54c-99fac3734e9a",
+      "employeeId": "4",
+      "date": "2024-11-28",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "78",
+      "storeId": 57604,
+      "employeeId": "4",
+      "date": "2024-11-15",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "79",
+      "storeId": 57604,
+      "employeeId": "1",
+      "date": "2024-11-08",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "80",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-01",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "81",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-10-29",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "82",
+      "storeId": 57604,
+      "employeeId": "3",
+      "date": "2024-11-07",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "83",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-11-26",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "84",
+      "storeId": 57604,
+      "employeeId": "2",
+      "date": "2024-10-31",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "85",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-11-01",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "86",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "4",
+      "date": "2024-11-05",
+      "startTime": "16:00",
+      "endTime": "02:00",
+      "shiftId": "270c0285-99c6-48df-b81f-cc8191370b5e"
+    },
+    {
+      "id": "87",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "1",
+      "date": "2024-11-04",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    },
+    {
+      "id": "88",
+      "storeId": "57604e5c-ed82-4162-b30b-9582b382d537",
+      "employeeId": "2",
+      "date": "2024-10-31",
+      "startTime": "01:20",
+      "endTime": "17:00",
+      "shiftId": "c4c2f9b0-6879-49d3-b189-516299623978"
+    }
+  ],
+  "logs": [
+    {
+      "id": 1,
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 2 am 2024-10-29",
+      "timestamp": "2024-11-26T20:56:53.992Z"
+    },
+    {
+      "id": 2,
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 39 wurde aktualisiert",
+      "timestamp": "2024-11-26T21:21:09.295Z"
+    },
+    {
+      "id": 3,
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 44 wurde aktualisiert",
+      "timestamp": "2024-11-26T21:25:08.754Z"
+    },
+    {
+      "id": 4,
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 61 wurde aktualisiert",
+      "timestamp": "2024-11-26T21:27:27.933Z"
+    },
+    {
+      "id": 5,
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 3 am 2024-11-14",
+      "timestamp": "2024-11-26T21:31:03.482Z"
+    },
+    {
+      "id": 6,
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 2 am 2024-11-26",
+      "timestamp": "2024-11-26T21:54:24.531Z"
+    },
+    {
+      "id": 7,
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 82 wurde aktualisiert",
+      "timestamp": "2024-11-26T22:48:31.628Z"
+    },
+    {
+      "id": 8,
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 2 am 2024-10-31",
+      "timestamp": "2024-11-27T01:02:26.429Z"
+    },
+    {
+      "id": 9,
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 41 wurde aktualisiert",
+      "timestamp": "2024-11-27T01:06:17.894Z"
+    },
+    {
+      "id": "10",
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 2 am 2024-11-05",
+      "timestamp": "2024-11-28T02:14:41.960Z"
+    },
+    {
+      "id": "11",
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 85 wurde aktualisiert",
+      "timestamp": "2024-11-28T02:14:44.549Z"
+    },
+    {
+      "id": "12",
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 4 am 2024-11-05",
+      "timestamp": "2024-11-28T10:08:54.211Z"
+    },
+    {
+      "id": "13",
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 1 am 2024-11-04",
+      "timestamp": "2024-11-28T10:12:37.000Z"
+    },
+    {
+      "id": "14",
+      "action": "Schicht erstellt",
+      "details": "Neue Schicht für 2 am 2024-10-31",
+      "timestamp": "2024-11-28T10:16:28.226Z"
+    },
+    {
+      "id": "15",
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 73 wurde aktualisiert",
+      "timestamp": "2024-11-28T10:17:51.206Z"
+    },
+    {
+      "id": "16",
+      "action": "Schicht gelöscht",
+      "details": "Schicht 56 für Datum 2024-11-08 (16:00-02:00) wurde gelöscht",
+      "timestamp": "2024-11-28T10:23:32.231Z"
+    },
+    {
+      "id": "17",
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 73 wurde aktualisiert",
+      "timestamp": "2024-11-28T10:24:10.570Z"
+    },
+    {
+      "id": "18",
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 32 wurde aktualisiert",
+      "timestamp": "2024-11-28T16:54:04.424Z"
+    },
+    {
+      "id": "19",
+      "action": "Schicht aktualisiert",
+      "details": "Schicht 26 wurde aktualisiert",
+      "timestamp": "2024-11-28T16:54:17.310Z"
+    }
+  ],
+  "assignments": [
+    {
+      "id": "a596b302-8410-4e0a-a2a7-0d53d83f6a7a",
+      "employeeId": "2",
+      "shiftId": "16",
+      "date": "2024-12-22",
+      "storeId": "1",
+      "createdAt": "2024-11-28T17:08:27.735Z",
+      "updatedAt": "2024-11-28T17:08:27.735Z"
+    },
+    {
+      "id": "77d0c499-c2d7-48a4-aea5-4645a38a454e",
+      "employeeId": "3",
+      "shiftId": "14",
+      "date": "2024-12-22",
+      "storeId": "1",
+      "createdAt": "2024-11-28T17:08:35.548Z",
+      "updatedAt": "2024-11-28T17:08:35.548Z"
+    },
+    {
+      "id": "97eb7913-2d67-4a1f-9ff8-c4f4d28311ae",
+      "employeeId": "3",
+      "shiftId": "17",
+      "date": "2024-12-15",
+      "storeId": "1",
+      "createdAt": "2024-11-28T17:08:40.364Z",
+      "updatedAt": "2024-11-28T17:08:40.364Z"
+    },
+    {
+      "id": "d6fb393a-2897-431f-971d-47c4f0789f76",
+      "employeeId": "2",
+      "shiftId": "5",
+      "date": "2024-12-22",
+      "storeId": "1",
+      "createdAt": "2024-11-28T17:09:14.764Z",
+      "updatedAt": "2024-11-28T17:09:14.764Z"
+    },
+    {
+      "id": "14784859-77a4-4f44-bffc-519ad561d54d",
+      "employeeId": "2",
+      "shiftId": "34",
+      "date": "2024-12-22",
+      "storeId": "1",
+      "createdAt": "2024-11-28T17:09:22.827Z",
+      "updatedAt": "2024-11-28T17:09:22.827Z"
+    },
+    {
+      "id": "1fd02317-210e-4bed-87ea-4bb98ffa1bba",
+      "employeeId": "2",
+      "shiftId": "4",
+      "date": "2024-12-22",
+      "storeId": "1",
+      "createdAt": "2024-11-28T17:09:29.318Z",
+      "updatedAt": "2024-11-28T17:09:29.318Z"
+    },
+    {
+      "id": "e7d6fcbc-34d3-4495-8f39-120ad9900c4b",
+      "employeeId": "2",
+      "shiftId": "16",
+      "date": "2024-12-10",
+      "storeId": "1",
+      "createdAt": "2024-11-28T17:11:53.794Z",
+      "updatedAt": "2024-11-28T17:11:53.794Z"
+    }
+  ]
+}

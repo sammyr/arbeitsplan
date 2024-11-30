@@ -1,0 +1,351 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 255, 255, 255;
+  --z-calendar-base: 1;
+  --z-calendar-event: 50;
+  --z-calendar-event-hover: 55;
+  --z-calendar-controls: 60;
+  --z-modal-overlay: 9999;
+  --z-modal-content: 10000;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+/* Calendar Styles */
+.rbc-calendar {
+  min-height: 600px;
+  position: relative;
+  z-index: var(--z-calendar-base) !important;
+}
+
+.rbc-event {
+  background-color: #3b82f6 !important;
+  border: none !important;
+  padding: 2px 4px !important;
+  min-height: 24px !important;
+  margin-bottom: 1px !important;
+  cursor: move !important;
+  box-shadow: 2px 2px 7px rgba(0, 0, 0, 0.3) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: var(--z-calendar-event) !important;
+}
+
+.rbc-event:hover {
+  z-index: var(--z-calendar-event-hover) !important;
+}
+
+.rbc-event-content {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  white-space: normal !important;
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+  padding: 0 !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  font-size: 0.875rem !important;
+}
+
+.rbc-event-content br {
+  display: block !important;
+  content: "" !important;
+  margin: 2px 0 !important;
+}
+
+.rbc-today {
+  background-color: #f3f4f6 !important;
+}
+
+.rbc-off-range-bg {
+  background-color: #f9fafb !important;
+}
+
+.rbc-header {
+  padding: 8px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  cursor: pointer !important;
+}
+
+.rbc-button-link {
+  padding: 4px !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+}
+
+.rbc-show-more {
+  color: #3b82f6 !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+}
+
+/* Calendar Customization */
+.rbc-calendar {
+  min-height: 800px !important;
+}
+
+.rbc-month-view {
+  flex: 1;
+}
+
+.rbc-month-row {
+  min-height: 100px !important;
+  overflow: visible !important;
+}
+
+.rbc-row-content {
+  min-height: 100px !important;
+  max-height: none !important;
+}
+
+.rbc-date-cell {
+  padding: 8px !important;
+  text-align: right;
+}
+
+.rbc-date-cell > a {
+  font-size: 1rem !important;
+  font-weight: 500;
+  color: #374151;
+}
+
+.rbc-row-segment {
+  padding: 2px 4px !important;
+}
+
+.bg-gray-50 {
+  background-color: #ffffff !important;
+}
+
+.rbc-addons-dnd .rbc-addons-dnd-row-body {
+  position: relative;
+}
+
+.rbc-addons-dnd .rbc-addons-dnd-drag-preview {
+  position: absolute;
+  z-index: var(--z-calendar-controls) !important;
+  pointer-events: none !important;
+}
+
+.rbc-addons-dnd .rbc-event {
+  transition: opacity 150ms;
+}
+
+.rbc-addons-dnd .rbc-event.rbc-addons-dnd-dragging {
+  opacity: 0.5;
+}
+
+.rbc-addons-dnd .rbc-event.rbc-addons-dnd-over {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.rbc-addons-dnd-over {
+  z-index: var(--z-calendar-event-hover) !important;
+}
+
+/* Calendar weekend styling */
+.saturday-cell {
+  background-color: #fff9c4 !important; /* Light yellow */
+}
+
+.sunday-cell {
+  background-color: #ffebee !important; /* Light red */
+}
+
+/* Make the colors slightly darker when hovering */
+.saturday-cell:hover {
+  background-color: #fff59d !important; /* Slightly darker yellow */
+}
+
+.sunday-cell:hover {
+  background-color: #ffcdd2 !important; /* Slightly darker red */
+}
+
+/* Calendar drag and drop styles */
+.rbc-addons-dnd-drag-preview {
+  min-width: 150px !important;
+  width: 150px !important;
+  background-color: var(--primary) !important;
+  opacity: 0.8 !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  color: white !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Custom select styling */
+select {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+select option {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  padding: 8px 12px !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+}
+
+select option:checked {
+  background-color: #EFF6FF !important;
+  color: #1E40AF !important;
+}
+
+select:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* Improve select dropdown appearance */
+select[multiple] {
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #94A3B8 transparent !important;
+}
+
+select[multiple]::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+select[multiple]::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+select[multiple]::-webkit-scrollbar-thumb {
+  background-color: #94A3B8 !important;
+  border-radius: 3px !important;
+}
+
+select[multiple]::-webkit-scrollbar-thumb:hover {
+  background-color: #64748B !important;
+}
+
+select[multiple] option:hover {
+  background-color: #EFF6FF !important;
+  color: #1E40AF !important;
+  cursor: pointer !important;
+}
+
+/* Form Styles */
+.form-input:focus,
+.form-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Calendar event styling */
+.rbc-event {
+  padding: 4px 6px !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25 !important;
+  border-radius: 4px !important;
+  margin: 1px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: white !important;
+  cursor: pointer !important;
+}
+
+.rbc-event-content {
+  font-size: 0.75rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
+}
+
+.rbc-event-content strong {
+  font-weight: 600 !important;
+  display: block !important;
+  margin-bottom: 1px !important;
+}
+
+.rbc-event-content span {
+  opacity: 0.9 !important;
+  font-size: 0.7rem !important;
+}
+
+.rbc-event-label {
+  font-size: 0.75rem !important;
+  opacity: 0.8 !important;
+  cursor: pointer !important;
+}
+
+/* Event edit popup styles */
+.rbc-event .group:hover {
+  z-index: var(--z-calendar-controls) !important;
+}
+
+/* Make all clickable calendar elements show pointer cursor */
+.rbc-event,
+.rbc-event-content,
+.rbc-event-label,
+.rbc-header,
+.rbc-button-link,
+.rbc-show-more {
+  cursor: pointer !important;
+}
+
+/* Adjust cell sizing */
+.rbc-calendar {
+  min-height: 600px !important;
+}
+
+.rbc-month-view {
+  min-height: 600px !important;
+}
+
+.rbc-month-row {
+  min-height: 100px !important;
+}
+
+.rbc-date-cell {
+  padding: 2px !important;
+  text-align: right !important;
+}
+
+/* Ensure events don't overflow */
+.rbc-event-overlaps {
+  box-shadow: none !important;
+}
+
+/* Modal and overlay styles */
+.fixed.inset-0,
+[class*="modal-overlay"] {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: var(--z-modal-overlay) !important;
+}
+
+.fixed.inset-0 > div,
+[class*="modal-content"] {
+  position: relative !important;
+  z-index: var(--z-modal-content) !important;
+  background: white !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+  backdrop-filter: blur(4px);
+}
