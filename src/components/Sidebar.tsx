@@ -13,10 +13,13 @@ import {
   ClipboardDocumentListIcon,
   QuestionMarkCircleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  HomeIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 const navigation = [
+  { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Dashboard', href: '/dashboard', icon: ChartBarIcon },
   { name: 'Arbeitsplan', href: '/arbeitsplan3', icon: CalendarIcon },
   { name: 'Schichten', href: '/schichten2', icon: ClockIcon },
@@ -45,15 +48,15 @@ export default function Sidebar() {
                     className={`
                       group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold mx-2
                       ${isActive
-                        ? 'bg-gray-50 text-blue-600'
-                        : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        ? 'bg-emerald-800 text-white'
+                        : 'text-emerald-100 hover:bg-emerald-800 hover:text-white'
                       }
                     `}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <item.icon
                       className={`h-6 w-6 shrink-0 ${
-                        isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                        isActive ? 'text-emerald-200' : 'text-emerald-200 group-hover:text-white'
                       }`}
                       aria-hidden="true"
                     />
@@ -78,18 +81,18 @@ export default function Sidebar() {
           onClick={() => setIsMobileMenuOpen(true)}
         >
           <span className="sr-only">Open sidebar</span>
-          <Bars3Icon className="h-6 w-6 text-gray-700" aria-hidden="true" />
+          <Bars3Icon className="h-6 w-6 text-emerald-100" aria-hidden="true" />
         </button>
 
         {/* Mobile menu overlay */}
         {isMobileMenuOpen && (
           <div className="fixed inset-0 z-50">
-            <div className="fixed inset-0 bg-gray-900/80" onClick={() => setIsMobileMenuOpen(false)} />
-            <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-white">
-              <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 px-6">
-                <h1 className="text-xl font-semibold text-gray-900">Arbeitsplan</h1>
+            <div className="fixed inset-0 bg-emerald-900/80" onClick={() => setIsMobileMenuOpen(false)} />
+            <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-emerald-900">
+              <div className="flex h-16 shrink-0 items-center justify-between border-b border-emerald-800 px-6">
+                <h1 className="text-xl font-semibold text-white">Arbeitsplan</h1>
                 <button
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                  className="p-2 text-emerald-100 hover:text-white hover:bg-emerald-800 rounded-lg"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <XMarkIcon className="h-6 w-6" />
@@ -105,9 +108,9 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
-          <div className="flex h-16 shrink-0 items-center border-b border-gray-200">
-            <h1 className="text-xl font-semibold text-gray-900">Arbeitsplan</h1>
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-emerald-800 bg-emerald-900 px-6">
+          <div className="flex h-16 shrink-0 items-center border-b border-emerald-800">
+            <h1 className="text-xl font-semibold text-white">Arbeitsplan</h1>
           </div>
           <NavigationLinks />
         </div>

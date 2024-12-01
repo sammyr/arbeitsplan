@@ -1,72 +1,217 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { format } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { dbService } from '@/lib/db';
-import { LogEntry } from '@/types/log';
+import { LogEntry, LogType } from '@/types/log';
+import { 
+  CheckCircleIcon, 
+  ExclamationCircleIcon, 
+  InformationCircleIcon, 
+  XCircleIcon 
+} from '@heroicons/react/24/outline';
+
+const LogTypeIcons: Record<LogType, React.ComponentType<{ className?: string }>> = {
+  success: CheckCircleIcon,
+  warning: ExclamationCircleIcon,
+  error: XCircleIcon,
+  info: InformationCircleIcon,
+};
+
+const LogTypeColors: Record<LogType, { bg: string; text: string; icon: string }> = {
+  success: { 
+    bg: 'bg-green-50', 
+    text: 'text-green-700', 
+    icon: 'text-green-400',
+  },
+  warning: { 
+    bg: 'bg-amber-50', 
+    text: 'text-amber-700', 
+    icon: 'text-amber-400',
+  },
+  error: { 
+    bg: 'bg-rose-50', 
+    text: 'text-rose-700', 
+    icon: 'text-rose-400',
+  },
+  info: { 
+    bg: 'bg-slate-50', 
+    text: 'text-slate-700', 
+    icon: 'text-slate-400',
+  },
+};
+
+interface LogEntryRowProps {
+  entry: LogEntry;
+}
+
+const LogEntryRow: React.FC<LogEntryRowProps> = ({ entry }) => {
+  const type: LogType = Object.keys(LogTypeColors).includes(entry.type) 
+    ? entry.type as LogType 
+    : 'info';
+  
+  const colors = LogTypeColors[type];
+  const Icon = LogTypeIcons[type];
+
+  let formattedTime = '-';
+  try {
+    formattedTime = format(new Date(entry.timestamp), 'HH:mm', { locale: de });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+  }
+
+  return (
+    <div className={`py-2 ${colors.bg}`}>
+      <div className="flex items-start px-4">
+        <div className="flex-shrink-0 pt-1">
+          <Icon className={`h-5 w-5 ${colors.icon}`} />
+        </div>
+        <div className="ml-3 flex-1">
+          <div className="flex items-center justify-between">
+            <p className={`text-sm font-medium ${colors.text}`}>
+              {entry.message}
+            </p>
+            <span className={`ml-2 text-sm ${colors.text} opacity-75`}>
+              {formattedTime}
+            </span>
+          </div>
+          {entry.details && (
+            <pre className={`mt-1 whitespace-pre-wrap text-sm ${colors.text} opacity-90`}>
+              {entry.details}
+            </pre>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface GroupedLogs {
+  [date: string]: LogEntry[];
+}
 
 export default function LogbuchPage() {
   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchLogs = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const logs = await dbService.getLogEntries();
+      const validatedLogs = logs.map(log => ({
+        ...log,
+        type: Object.keys(LogTypeColors).includes(log.type) ? log.type : 'info'
+      }));
+      setLogEntries(validatedLogs);
+    } catch (error) {
+      console.error('Error fetching log entries:', error);
+      setError('Fehler beim Laden der Logbuch-Einträge');
+      setLogEntries([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClearLogs = async () => {
+    if (!confirm('Möchten Sie wirklich alle Logbuch-Einträge löschen?')) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      await dbService.clearLogs();
+      await dbService.addLogEntry('info', 'Logbuch gelöscht', 'Alle Logbuch-Einträge wurden gelöscht');
+      await fetchLogs();
+    } catch (error) {
+      console.error('Error clearing logs:', error);
+      setError('Fehler beim Löschen der Logbuch-Einträge');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const groupLogsByDate = (logs: LogEntry[]): GroupedLogs => {
+    return logs.reduce((groups: GroupedLogs, log) => {
+      const date = format(parseISO(log.timestamp), 'yyyy-MM-dd');
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(log);
+      return groups;
+    }, {});
+  };
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const logs = await dbService.getLogEntries();
-        setLogEntries(logs);
-      } catch (error) {
-        console.error('Error fetching log entries:', error);
-      }
-    };
-
     fetchLogs();
   }, []);
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Logbuch</h1>
-      
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Zeitpunkt
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aktion
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Details
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {logEntries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {format(new Date(entry.timestamp), 'dd.MM.yyyy HH:mm', { locale: de })}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {entry.action}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {entry.details}
-                  </td>
-                </tr>
-              ))}
-              {logEntries.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                    Keine Einträge gefunden
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-slate-600">Lade Logbuch-Einträge...</div>
         </div>
       </div>
+    );
+  }
+
+  const groupedLogs = groupLogsByDate(logEntries);
+  const dates = Object.keys(groupedLogs).sort().reverse();
+
+  return (
+    <div className="container mx-auto p-4">
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Logbuch</h1>
+            <p className="text-slate-600">
+              Übersicht aller Systemaktivitäten und Änderungen.
+            </p>
+          </div>
+          {logEntries.length > 0 && (
+            <button
+              onClick={handleClearLogs}
+              className="px-4 py-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors duration-200"
+            >
+              Logbuch löschen
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {error ? (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700">
+          {error}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {dates.length > 0 ? (
+            dates.map(date => {
+              const formattedDate = format(parseISO(date), 'EEEE, d. MMMM yyyy', { locale: de });
+              return (
+                <div key={date} className="space-y-1">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-2">
+                    {formattedDate}
+                  </h2>
+                  <div className="bg-white rounded-lg shadow-sm divide-y divide-slate-100">
+                    {groupedLogs[date].map(entry => (
+                      <LogEntryRow key={entry.id} entry={entry} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              Keine Logbuch-Einträge vorhanden
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

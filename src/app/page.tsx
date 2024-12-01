@@ -20,8 +20,8 @@ const features = [
     href: '/workplan',
   },
   {
-    name: 'Mitarbeiterverwaltung',
-    description: 'Hinzufügen, Bearbeiten und Verwalten von Mitarbeiterinformationen.',
+    name: 'Mitarbeiter-verwaltung',
+    description: 'Hinzufügen, Bearbeiten und Verwalten von Mitarbeiter-informationen.',
     icon: MdPeople,
     href: '/employees',
   },
@@ -55,7 +55,7 @@ export default function Home() {
         <div className="mx-auto max-w-4xl py-12">
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Willkommen beim Arbeitsplan-Manager
+              Willkommen beim <span>Arbeitsplan Manager</span>
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
               Verwalten Sie effizient die Arbeitszeitpläne und Mitarbeiterinformationen
@@ -70,11 +70,15 @@ export default function Home() {
                   href={feature.href}
                   className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
                 >
-                  <div className="flex items-center">
-                    <feature.icon className="h-10 w-10 text-blue-500" />
-                    <h2 className="ml-3 text-xl font-semibold text-gray-900">{feature.name}</h2>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <feature.icon className="h-10 w-10 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">{feature.name}</h2>
+                      <p className="mt-2 text-gray-600">{feature.description}</p>
+                    </div>
                   </div>
-                  <p className="mt-4 text-gray-600">{feature.description}</p>
                 </Link>
               ))}
             </div>

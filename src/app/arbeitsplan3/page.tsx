@@ -14,6 +14,7 @@ import { toast } from 'react-hot-toast';
 import ShiftAssignmentModal from '@/components/ShiftAssignmentModal';
 import { storage } from '@/lib/storage'; // Korrigiere den Storage-Import
 import ReactDOM from 'react-dom';
+import { MdPrint, MdPictureAsPdf, MdFileDownload } from 'react-icons/md';
 
 // Funktion zum Laden der Store-Daten
 const loadStoreData = async (
@@ -61,12 +62,20 @@ const loadStoreData = async (
 
 export default function Arbeitsplan3Page() {
   // State Management
-  const [currentDate, setCurrentDate] = useState(() => {
-    if (typeof window === 'undefined') return new Date();
-    const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
-    if (!savedDate) return new Date();
-    const parsedDate = new Date(savedDate);
-    return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    // Versuche das gespeicherte Datum zu laden, wenn verfügbar
+    if (typeof window !== 'undefined') {
+      const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
+      if (savedDate) {
+        const parsedDate = new Date(savedDate);
+        parsedDate.setHours(0, 0, 0, 0);
+        return parsedDate;
+      }
+    }
+    // Fallback auf aktuelles Datum
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
   });
 
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
@@ -78,18 +87,20 @@ export default function Arbeitsplan3Page() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Save current date to localStorage whenever it changes
+  // Speichere das aktuelle Datum bei jeder Änderung
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('arbeitsplan3_currentDate', currentDate.toISOString());
     }
   }, [currentDate]);
 
-  // Load saved date and store from localStorage on client-side only
+  // Lade das gespeicherte Datum nur client-seitig
   useEffect(() => {
     const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
     if (savedDate) {
-      setCurrentDate(new Date(savedDate));
+      const parsedDate = new Date(savedDate);
+      parsedDate.setHours(0, 0, 0, 0);
+      setCurrentDate(parsedDate);
     }
   }, []);
 
@@ -135,12 +146,16 @@ export default function Arbeitsplan3Page() {
   });
 
   const handlePreviousMonth = () => {
-    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    newDate.setHours(0, 0, 0, 0);
     setCurrentDate(newDate);
   };
 
   const handleNextMonth = () => {
-    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1);
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    newDate.setHours(0, 0, 0, 0);
     setCurrentDate(newDate);
   };
 
@@ -253,16 +268,26 @@ export default function Arbeitsplan3Page() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen p-6 pb-24"> {/* Erhöhter Abstand am unteren Rand */}
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h1 className="text-3xl font-bold text-gray-800">
-              Arbeitsplan
-            </h1>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-slate-800">
+                Arbeitsplan für{' '}
+            
+                 <span> {selectedStore?.name || ' '} / </span>
+               
+             
+             
+                 {format(currentDate, 'MMMM yyyy', { locale: de })}
+               </h1>
+            </div>
             <select
-              className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              className="px-4 py-2.5 text-base border border-slate-200 rounded-lg bg-slate-50 text-slate-700 
+                focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 
+                hover:border-emerald-300 transition-all"
               value={selectedStore?.id || ''}
               onChange={(e) => {
                 const store = stores.find(s => s.id === e.target.value);
@@ -288,29 +313,55 @@ export default function Arbeitsplan3Page() {
         {/* Calendar Navigation */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={handlePreviousMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <h2 className="text-xl font-semibold text-gray-800">
-              {format(currentDate, 'MMMM yyyy', { locale: de })}
-            </h2>
-            <button
-              onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handlePreviousMonth}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-semibold text-gray-800 mx-4">
+                {format(currentDate, 'MMMM yyyy', { locale: de })}
+              </h2>
+              <button
+                onClick={handleNextMonth}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => toast.success('Druckfunktion kommt bald!')}
+                className="inline-flex items-center px-4 py-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <MdPrint className="w-5 h-5 mr-2" />
+                Drucken
+              </button>
+              <button
+                onClick={() => toast.success('PDF Export kommt bald!')}
+                className="inline-flex items-center px-4 py-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <MdPictureAsPdf className="w-5 h-5 mr-2" />
+                PDF Export
+              </button>
+              <button
+                onClick={() => toast.success('Excel Export kommt bald!')}
+                className="inline-flex items-center px-4 py-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <MdFileDownload className="w-5 h-5 mr-2" />
+                Excel Export
+              </button>
+            </div>
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg ">
             {/* Weekday Headers */}
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
               <div key={day} className="bg-gray-50 p-2 text-center font-medium text-gray-600">
@@ -329,7 +380,6 @@ export default function Arbeitsplan3Page() {
                       className={`
                         min-h-[120px] p-2 bg-white
                         ${!isSameMonth(date, currentDate) ? 'bg-gray-50' : ''}
-                        ${isToday(date) ? 'ring-2 ring-blue-500' : ''}
                         hover:bg-gray-50 transition-colors cursor-pointer
                       `}
                       onClick={() => handleDateClick(date)}
@@ -360,18 +410,18 @@ export default function Arbeitsplan3Page() {
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
-                                    className="group relative p-1.5 bg-blue-50 text-blue-700 text-xs rounded-md hover:bg-blue-100 transition-colors"
+                                    className="group relative p-1.5 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 text-xs rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm"
                                   >
                                     <div className="flex items-center justify-between">
                                       <span>
-                                        {employee?.firstName} {employee?.lastName} {shift?.title}
+                                       <strong className="text-slate-900">{employee?.firstName}</strong>   {shift?.title}
                                       </span>
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleDeleteAssignment(assignment.id);
                                         }}
-                                        className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 text-red-500 hover:text-red-700 rounded transition-opacity"
+                                        className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 text-slate-500 hover:text-slate-700 rounded transition-opacity"
                                         title="Schicht löschen"
                                       >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -26,41 +26,65 @@ body {
 }
 
 .rbc-event {
-  background-color: #3b82f6 !important;
-  border: none !important;
-  padding: 2px 4px !important;
-  min-height: 24px !important;
-  margin-bottom: 1px !important;
-  cursor: move !important;
-  box-shadow: 2px 2px 7px rgba(0, 0, 0, 0.3) !important;
   cursor: pointer !important;
   position: relative !important;
   z-index: var(--z-calendar-event) !important;
+  transition: all 0.3s ease-in-out !important;
+  background: linear-gradient(to bottom right, #60a5fa, #3b82f6) !important;
+  border: none !important;
+  padding: 4px 6px !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25 !important;
+  border-radius: 4px !important;
+  margin: 1px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: white !important;
 }
 
 .rbc-event:hover {
-  z-index: var(--z-calendar-event-hover) !important;
+  z-index: calc(var(--z-calendar-event) + 1) !important;
+  background: linear-gradient(to bottom right, #93c5fd, #60a5fa) !important;
 }
 
 .rbc-event-content {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  white-space: normal !important;
-  font-size: 0.75rem !important;
-  line-height: 1rem !important;
-  padding: 0 !important;
-  text-align: center !important;
+  transition: transform 0.3s ease-in-out !important;
+  padding: 2px 4px !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 2px !important;
   font-size: 0.875rem !important;
+  color: white !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) !important;
+  font-size: 0.75rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
 }
 
 .rbc-event-content br {
   display: block !important;
   content: "" !important;
   margin: 2px 0 !important;
+}
+
+.rbc-event-content strong {
+  font-weight: 600 !important;
+  display: block !important;
+  margin-bottom: 1px !important;
+}
+
+.rbc-event-content span {
+  opacity: 0.9 !important;
+  font-size: 0.7rem !important;
+}
+
+.rbc-event-label {
+  font-size: 0.75rem !important;
+  opacity: 0.8 !important;
+  cursor: pointer !important;
 }
 
 .rbc-today {
@@ -246,45 +270,6 @@ select[multiple] option:hover {
   box-shadow: 0 0 0 1px #3b82f6;
 }
 
-/* Calendar event styling */
-.rbc-event {
-  padding: 4px 6px !important;
-  font-size: 0.875rem !important;
-  line-height: 1.25 !important;
-  border-radius: 4px !important;
-  margin: 1px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  color: white !important;
-  cursor: pointer !important;
-}
-
-.rbc-event-content {
-  font-size: 0.75rem !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  line-height: 1.2 !important;
-}
-
-.rbc-event-content strong {
-  font-weight: 600 !important;
-  display: block !important;
-  margin-bottom: 1px !important;
-}
-
-.rbc-event-content span {
-  opacity: 0.9 !important;
-  font-size: 0.7rem !important;
-}
-
-.rbc-event-label {
-  font-size: 0.75rem !important;
-  opacity: 0.8 !important;
-  cursor: pointer !important;
-}
-
 /* Event edit popup styles */
 .rbc-event .group:hover {
   z-index: var(--z-calendar-controls) !important;
@@ -352,7 +337,7 @@ select[multiple] option:hover {
 
 /* New CSS rule for text-xs */
 .text-xs {
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   line-height: 1.1rem;
   text-align: center;
   padding: 5px;
@@ -368,4 +353,26 @@ select[multiple] option:hover {
   -webkit-backdrop-filter: blur(1px) !important;
   backdrop-filter: blur(1px) !important;
 
+}
+
+.to-gray-100 {
+  --tw-gradient-to: #fcfcfc var(--tw-gradient-to-position);
+}
+
+html {
+  background: linear-gradient(to bottom, #808080, #beccda) !important;
+  min-height: 180%;
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+
+.fixed.inset-0 > div, [class*="modal-content"] {
+  background: none !important;
+
+  box-shadow: 0 0px 0px -5px rgba(0, 0, 0, 0.0), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
 }

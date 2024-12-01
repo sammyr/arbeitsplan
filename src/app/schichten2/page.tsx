@@ -126,120 +126,120 @@ export default function Schichten2Page() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Arbeitszeiten (DB)</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Liste aller Arbeitszeiten mit direkter Datenbankanbindung.
-          </p>
-        </div>
+    <div className="container mx-auto p-4 bg-transparent">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">Arbeitszeiten (DB)</h1>
+        <p className="text-slate-600">
+          Liste aller Arbeitszeiten mit direkter Datenbankanbindung.
+        </p>
       </div>
 
-      <form onSubmit={editingShift ? handleUpdate : handleSubmit} className="mt-8 space-y-6 bg-white py-6 px-4 shadow sm:rounded-lg sm:px-6">
-        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+      <div className="space-y-6 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h2 className="text-2xl font-semibold text-slate-800">Schicht hinzufügen</h2>
+        
+        <div className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+            <label className="block text-base font-medium text-slate-700 mb-2">
               Schichtbezeichnung
             </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="title"
-                required
-                value={newShiftTitle}
-                onChange={(e) => setNewShiftTitle(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="z.B. Frühschicht"
-              />
-            </div>
+            <input
+              type="text"
+              value={newShiftTitle}
+              onChange={(e) => setNewShiftTitle(e.target.value)}
+              className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                transition-colors duration-200"
+              placeholder="z.B. Frühschicht"
+            />
           </div>
 
           <div>
-            <label htmlFor="workHours" className="block text-sm font-medium text-gray-700">
+            <label className="block text-base font-medium text-slate-700 mb-2">
               Arbeitsstunden
             </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                id="workHours"
-                value={newShiftHours}
-                onChange={(e) => setNewShiftHours(e.target.value)}
-                min="0.5"
-                step="0.5"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="z.B. 8"
-              />
-            </div>
+            <input
+              type="number"
+              value={newShiftHours}
+              onChange={(e) => setNewShiftHours(e.target.value)}
+              min="0.5"
+              step="0.5"
+              className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                transition-colors duration-200"
+              placeholder="z.B. 8"
+            />
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-end space-x-3 mt-6">
           {editingShift && (
             <button
               type="button"
               onClick={handleCancel}
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              className="px-6 py-2.5 text-base font-medium rounded-lg border border-slate-300 
+                text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 
+                focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
             >
               Abbrechen
             </button>
           )}
           <button
             type="submit"
-            className="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+            onClick={editingShift ? handleUpdate : handleSubmit}
+            className="px-6 py-2.5 text-base font-medium rounded-lg border border-transparent 
+              text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 
+              focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
           >
             {editingShift ? 'Aktualisieren' : 'Hinzufügen'}
           </button>
         </div>
-      </form>
+      </div>
 
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                      Schicht
-                    </th>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Arbeitsstunden
-                    </th>
-                    <th className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span className="sr-only">Aktionen</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {shifts.map((shift) => (
-                    <tr key={shift.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                        {shift.title}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {shift.workHours}
-                      </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <button
-                          onClick={() => handleEdit(shift)}
-                          className="text-blue-600 hover:text-blue-900 mr-4"
-                        >
-                          <MdEdit className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(shift.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <MdDelete className="h-5 w-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Schicht
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Arbeitsstunden
+                </th>
+                <th scope="col" className="relative px-6 py-3">
+                  <span className="sr-only">Aktionen</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {shifts.map((shift) => (
+                <tr key={shift.id} className="hover:bg-slate-50 transition-all duration-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                    {shift.title}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {shift.workHours}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleEdit(shift)}
+                      className="text-emerald-600 hover:text-emerald-900 mr-4 transition-colors duration-200"
+                      title="Bearbeiten"
+                    >
+                      <MdEdit className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(shift.id)}
+                      className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                      title="Löschen"
+                    >
+                      <MdDelete className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

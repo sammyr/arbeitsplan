@@ -1,7 +1,7 @@
 import { Employee } from '@/types/employee';
 import { Store } from '@/types/store';
 import { Shift } from '@/types/shift';
-import { LogEntry } from '@/types/log';
+import { LogEntry, LogType } from '@/types/log';
 import { ShiftAssignment } from '@/types/shift-assignment';
 import { WorkingShift } from '@/types/working-shift';
 import { initialStores, initialEmployees, initialShifts } from './initialData';
@@ -98,6 +98,7 @@ export const dbService = {
       workingShifts: []
     };
     await writeDb(dbData);
+    await dbService.addLogEntry('success', 'Datenbank wurde erfolgreich zurückgesetzt');
   },
 
   // Store operations
@@ -125,6 +126,7 @@ export const dbService = {
     };
     db.stores.push(newStore);
     await writeDb(db);
+    await dbService.addLogEntry('success', `Store ${newStore.id} wurde erfolgreich erstellt`);
     return id;
   },
 
@@ -139,6 +141,7 @@ export const dbService = {
       updatedAt: new Date().toISOString()
     };
     await writeDb(db);
+    await dbService.addLogEntry('info', `Store ${id} wurde aktualisiert: ${JSON.stringify(storeData)}`);
   },
 
   async deleteStore(id: string): Promise<void> {
@@ -148,6 +151,7 @@ export const dbService = {
     if (index === -1) throw new Error('Store not found');
     db.stores.splice(index, 1);
     await writeDb(db);
+    await dbService.addLogEntry('success', `Store ${id} wurde erfolgreich gelöscht`);
   },
 
   async saveStore(store: Store): Promise<void> {
@@ -202,7 +206,7 @@ export const dbService = {
 
     db.employees.push(newEmployee);
     await writeDb(db);
-    
+    await dbService.addLogEntry('success', `Mitarbeiter ${newEmployee.id} wurde erfolgreich erstellt`);
     return id;
   },
 
@@ -221,44 +225,90 @@ export const dbService = {
     };
 
     await writeDb(db);
+    await dbService.addLogEntry('info', `Mitarbeiter ${id} wurde aktualisiert: ${JSON.stringify(employeeData)}`);
   },
 
   async deleteEmployee(id: string): Promise<void> {
     const db = await readDb();
+    if (!db) throw new Error('Database not initialized');
+
     const index = db.employees.findIndex(e => e.id === id);
-    
-    if (index === -1) {
-      throw new Error('Employee not found');
-    }
+    if (index === -1) throw new Error('Employee not found');
 
     db.employees.splice(index, 1);
     await writeDb(db);
+    await dbService.addLogEntry('success', `Mitarbeiter ${id} wurde erfolgreich gelöscht`);
+  },
+
+  async deleteEmployeeWithAssignments(id: string): Promise<void> {
+    const db = await readDb();
+    if (!db) throw new Error('Database not initialized');
+
+    const index = db.employees.findIndex(e => e.id === id);
+    if (index === -1) throw new Error('Employee not found');
+
+    // Lösche alle Schichtzuweisungen des Mitarbeiters
+    db.assignments = db.assignments.filter(assignment => assignment.employeeId !== id);
+
+    // Lösche den Mitarbeiter
+    db.employees.splice(index, 1);
+
+    await writeDb(db);
+    await dbService.addLogEntry('warning', `Mitarbeiter ${id} wurde mit allen Schichtzuweisungen gelöscht`);
   },
 
   // Log operations
   async getLogEntries(): Promise<LogEntry[]> {
     const db = await readDb();
-    return db.logs || [];
+    if (!db?.logs) return [];
+    return db.logs;
   },
 
-  async addLogEntry(action: string, details: string): Promise<void> {
+  async clearLogs(): Promise<void> {
     const db = await readDb();
-    if (!db.logs) {
+    if (!db) throw new Error('Database not initialized');
+    db.logs = [];
+    await writeDb(db);
+    await dbService.addLogEntry('success', 'Logbuch wurde erfolgreich gelöscht');
+  },
+
+  async addLogEntry(type: LogType, message: string, details?: any): Promise<void> {
+    const db = await readDb();
+    if (!db) throw new Error('Database not initialized');
+
+    // Ensure logs array exists
+    if (!Array.isArray(db.logs)) {
       db.logs = [];
     }
 
-    const newId = db.logs.length > 0 
-      ? (Math.max(...db.logs.map(log => parseInt(log.id))) + 1).toString()
-      : '1';
+    // Validate log type
+    const validTypes = ['info', 'success', 'warning', 'error'] as const;
+    const validType = validTypes.includes(type as any) ? type : 'info';
+
+    // Format details if they exist
+    let formattedDetails: string | undefined;
+    if (details !== undefined) {
+      formattedDetails = typeof details === 'string' 
+        ? details 
+        : JSON.stringify(details, null, 2);
+    }
 
     const newLog: LogEntry = {
-      id: newId,
-      action,
-      details,
+      id: crypto.randomUUID(),
+      type: validType,
+      message: message || 'Keine Nachricht',
+      details: formattedDetails,
       timestamp: new Date().toISOString(),
     };
 
-    db.logs.push(newLog);
+    // Add to beginning of array (newest first)
+    db.logs.unshift(newLog);
+
+    // Keep only the last 1000 entries
+    if (db.logs.length > 1000) {
+      db.logs = db.logs.slice(0, 1000);
+    }
+
     await writeDb(db);
   },
 
@@ -319,10 +369,7 @@ export const dbService = {
     await writeDb(db);
 
     // Füge einen Log-Eintrag hinzu
-    await this.addLogEntry(
-      'Schicht aktualisiert',
-      `Schicht ${id} wurde aktualisiert: ${JSON.stringify(shiftData)}`
-    );
+    await this.addLogEntry('info', `Schicht ${id} wurde aktualisiert: ${JSON.stringify(shiftData)}`);
   },
 
   async deleteShift(id: string): Promise<void> {
@@ -334,6 +381,7 @@ export const dbService = {
 
     db.shifts.splice(shiftIndex, 1);
     await writeDb(db);
+    await this.addLogEntry('success', `Schicht ${id} wurde erfolgreich gelöscht`);
   },
 
   async getShiftsByStore(storeId: string): Promise<Shift[]> {
@@ -363,7 +411,7 @@ export const dbService = {
     };
     db.workingShifts.push(newShift);
     await writeDb(db);
-    await dbService.addLogEntry('Neue Arbeitszeit erstellt', `Neue Arbeitszeit "${shift.title}" wurde erstellt`);
+    await dbService.addLogEntry('success', `Neue Arbeitszeit "${shift.title}" wurde erstellt`);
     return id;
   },
 
@@ -379,7 +427,7 @@ export const dbService = {
     };
     db.workingShifts[index] = updatedShift;
     await writeDb(db);
-    await dbService.addLogEntry('Arbeitszeit aktualisiert', `Arbeitszeit "${updatedShift.title}" wurde aktualisiert`);
+    await dbService.addLogEntry('info', `Arbeitszeit "${updatedShift.title}" wurde aktualisiert`);
   },
 
   async deleteWorkingShift(id: string): Promise<void> {
@@ -389,7 +437,7 @@ export const dbService = {
     
     db.workingShifts = db.workingShifts.filter(s => s.id !== id);
     await writeDb(db);
-    await dbService.addLogEntry('Arbeitszeit gelöscht', `Arbeitszeit "${shift.title}" wurde gelöscht`);
+    await dbService.addLogEntry('success', `Arbeitszeit "${shift.title}" wurde gelöscht`);
   },
 
   async getWorkingShifts(): Promise<WorkingShift[]> {
