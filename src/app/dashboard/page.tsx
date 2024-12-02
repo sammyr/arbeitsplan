@@ -57,7 +57,16 @@ export default function DashboardPage() {
     },
   ]);
 
-  const [activities, setActivities] = useState([]);
+  interface Activity {
+    id: string;
+    content: string;
+    date: string;
+    icon: any; 
+    iconBackground: string;
+    details?: string;
+  }
+
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
     loadDashboardData();
