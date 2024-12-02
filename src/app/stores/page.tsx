@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FaTrash, FaEdit } from 'react-icons/fa';
 import { Store } from '@/types/store';
 import { storage } from '@/lib/storage';
+import { initialStores } from '@/lib/initialData';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -19,19 +20,12 @@ export default function StoresPage() {
     console.log('Loaded stores:', storesList);
     setStores(storesList);
 
-    // Wenn keine Stores existieren, füge einen Beispiel-Store hinzu
+    // Wenn keine Stores existieren, füge die Initial-Stores hinzu
     if (storesList.length === 0) {
-      const exampleStore: Store = {
-        id: '1',
-        name: 'Hauptfiliale',
-        address: 'Hauptstraße 1, 12345 Stadt',
-        phone: '',
-        email: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      storage.saveStore(exampleStore);
-      setStores([exampleStore]);
+      initialStores.forEach(store => {
+        storage.saveStore(store);
+      });
+      setStores(initialStores);
     }
   };
 
@@ -99,18 +93,13 @@ export default function StoresPage() {
                   Filialname
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2-1a1 1 0 00-1 1v12a1 1 0 001 1h8a1 1 0 001-1V4a1 1 0 00-1-1H6z" clipRule="evenodd" />
-                    </svg>
-                  </div>
                   <input
                     type="text"
                     id="storeName"
                     value={newStore}
                     onChange={(e) => setNewStore(e.target.value)}
                     placeholder="Name der Filiale"
-                    className="pl-10 block w-full rounded-lg border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 transition-colors duration-200 outline-none"
+                    className="block w-full rounded-lg border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 transition-colors duration-200 outline-none"
                   />
                 </div>
               </div>

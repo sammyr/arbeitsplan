@@ -4,7 +4,7 @@ import { Shift } from '@/types/shift';
 import { LogEntry, LogType } from '@/types/log';
 import { ShiftAssignment } from '@/types/shift-assignment';
 import { WorkingShift } from '@/types/working-shift';
-import { initialStores, initialEmployees, initialShifts } from './initialData';
+import { initialStores, initialEmployees, initialShifts, initialShifts2 } from './initialData';
 
 let dbData: {
   employees: Employee[];
@@ -52,7 +52,7 @@ async function readDb() {
         shifts: initialShifts,
         logs: [],
         assignments: [],
-        workingShifts: []
+        workingShifts: [...initialShifts, ...initialShifts2]
       };
       // Save the initialized data
       localStorage.setItem('arbeitsplan_db', JSON.stringify(dbData));
@@ -67,7 +67,7 @@ async function readDb() {
       shifts: initialShifts,
       logs: [],
       assignments: [],
-      workingShifts: []
+      workingShifts: [...initialShifts, ...initialShifts2]
     };
     return dbData;
   }
@@ -95,7 +95,7 @@ export const dbService = {
       shifts: initialShifts,
       logs: [],
       assignments: [],
-      workingShifts: []
+      workingShifts: [...initialShifts, ...initialShifts2]
     };
     await writeDb(dbData);
     await dbService.addLogEntry('success', 'Datenbank wurde erfolgreich zurückgesetzt');
@@ -442,9 +442,11 @@ export const dbService = {
 
   async getWorkingShifts(): Promise<WorkingShift[]> {
     const db = await readDb();
-    if (!db.workingShifts) {
-      db.workingShifts = [];
+    if (!db.workingShifts || db.workingShifts.length === 0) {
+      // Initialisiere nur mit den Schichten für /schichten2
+      db.workingShifts = initialShifts2;
       await writeDb(db);
+      await dbService.addLogEntry('success', 'Arbeitszeiten wurden initialisiert');
     }
     return db.workingShifts;
   },

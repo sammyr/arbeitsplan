@@ -2,21 +2,21 @@
   "employees": [
     {
       "id": "2",
-      "name": "Anna Schmidt",
-      "role": "Verkäufer",
-      "email": "anna@example.com"
+      "name": "Silvia K.",
+      "role": "Verkäufer",      
+      "email": "sunny1366@schein.de"
     },
     {
       "id": "3",
-      "name": "Lisa Weber",
+      "name": "Maxi Weber",
       "role": "Verkäufer",
-      "email": "lisa@example.com"
+      "email": "maxi@example.com"
     },
     {
       "id": "1",
-      "name": "Max Mustermann",
+      "name": "Cindy Mustermann",
       "role": "Manager",
-      "email": "max@example.com"
+      "email": "cindy@example.com"
     },
     {
       "id": "4",
@@ -28,12 +28,12 @@
   "stores": [
     {
       "id": "1",
-      "name": "Hauptfiliale",
+      "name": "Erkner",
       "address": "Hauptstraße 1, 10115 Berlin"
     },
     {
       "id": "2",
-      "name": "Filiale Nord",
+      "name": "Goßen",
       "address": "Nordstraße 25, 13359 Berlin"
     }
   ],

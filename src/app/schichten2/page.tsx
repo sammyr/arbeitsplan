@@ -18,7 +18,9 @@ export default function Schichten2Page() {
 
   const loadShifts = async () => {
     try {
+      console.log('Loading shifts...');
       const loadedShifts = await dbService.getWorkingShifts();
+      console.log('Loaded shifts:', loadedShifts);
       setShifts(loadedShifts);
     } catch (error) {
       console.error('Error loading shifts:', error);

@@ -15,6 +15,7 @@ import ShiftAssignmentModal from '@/components/ShiftAssignmentModal';
 import { storage } from '@/lib/storage'; // Korrigiere den Storage-Import
 import ReactDOM from 'react-dom';
 import { MdPrint, MdPictureAsPdf, MdFileDownload } from 'react-icons/md';
+import { initialSelectedStore, initialStores } from '@/lib/initialData';
 
 // Funktion zum Laden der Store-Daten
 const loadStoreData = async (
@@ -78,7 +79,21 @@ export default function Arbeitsplan3Page() {
     return date;
   });
 
-  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [selectedStore, setSelectedStore] = useState<Store | null>(() => {
+    // Versuche die gespeicherte Filiale zu laden
+    if (typeof window !== 'undefined') {
+      const savedStoreId = localStorage.getItem('arbeitsplan3_selectedStore');
+      if (savedStoreId) {
+        const savedStore = storage.getStores().find(store => store.id === savedStoreId);
+        if (savedStore) {
+          return savedStore;
+        }
+      }
+    }
+    // Fallback auf die Standard-Filiale
+    return initialSelectedStore;
+  });
+
   const [stores, setStores] = useState<Store[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<WorkingShift[]>([]);
@@ -93,6 +108,13 @@ export default function Arbeitsplan3Page() {
       localStorage.setItem('arbeitsplan3_currentDate', currentDate.toISOString());
     }
   }, [currentDate]);
+
+  // Speichere die ausgewählte Filiale bei jeder Änderung
+  useEffect(() => {
+    if (typeof window !== 'undefined' && selectedStore) {
+      localStorage.setItem('arbeitsplan3_selectedStore', selectedStore.id);
+    }
+  }, [selectedStore]);
 
   // Lade das gespeicherte Datum nur client-seitig
   useEffect(() => {
@@ -110,7 +132,15 @@ export default function Arbeitsplan3Page() {
       setIsLoading(true);
       
       console.log('Loading initial stores...');
-      const loadedStores = storage.getStores();
+      // Hole Stores aus dem Storage
+      let loadedStores = storage.getStores();
+      
+      // Wenn keine Stores im Storage sind, initialisiere mit initialStores
+      if (loadedStores.length === 0) {
+        initialStores.forEach(store => storage.saveStore(store));
+        loadedStores = initialStores;
+      }
+      
       setStores(loadedStores);
       
       // Load selected store from localStorage if available
@@ -121,6 +151,10 @@ export default function Arbeitsplan3Page() {
           setSelectedStore(savedStore);
           await loadStoreData(savedStore, setIsLoading, setEmployees, setShifts, setAssignments);
         }
+      } else if (loadedStores.length > 0) {
+        // Wenn kein Store ausgewählt ist, aber Stores vorhanden sind, wähle den ersten
+        setSelectedStore(loadedStores[0]);
+        await loadStoreData(loadedStores[0], setIsLoading, setEmployees, setShifts, setAssignments);
       }
       
       setIsLoading(false);
@@ -186,10 +220,27 @@ export default function Arbeitsplan3Page() {
       const newAssignment = { ...assignment, id: assignmentId };
       setAssignments(prev => [...prev, newAssignment]);
       
+      // Hole Mitarbeiter- und Schichtinformationen für den Log-Eintrag
+      const employee = employees.find(e => e.id === employeeId);
+      const shift = shifts.find(s => s.id === shiftId);
+      
+      // Erstelle einen detaillierten Log-Eintrag
+      await dbService.addLogEntry(
+        'success',
+        `Neue Schicht zugewiesen`,
+        {
+          mitarbeiter: employee?.firstName || 'Unbekannt',
+          schicht: shift?.title || 'Unbekannt',
+          datum: format(selectedDate, 'dd.MM.yyyy'),
+          filiale: selectedStore.name
+        }
+      );
+      
       toast.success('Schicht erfolgreich zugewiesen');
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving assignment:', error);
+      await dbService.addLogEntry('error', 'Fehler beim Zuweisen der Schicht');
       toast.error('Fehler beim Speichern der Zuweisung');
     }
   };
@@ -197,16 +248,36 @@ export default function Arbeitsplan3Page() {
   // Funktion zum Löschen einer Schichtzuweisung
   const handleDeleteAssignment = async (assignmentId: string) => {
     try {
-      await dbService.deleteAssignment(assignmentId);
-      setAssignments(prev => prev.filter(a => a.id !== assignmentId));
-      toast.success('Schicht wurde gelöscht');
+      // Finde die zu löschende Zuweisung
+      const assignment = assignments.find(a => a.id === assignmentId);
+      if (assignment) {
+        const employee = employees.find(e => e.id === assignment.employeeId);
+        const shift = shifts.find(s => s.id === assignment.shiftId);
+        
+        await dbService.deleteAssignment(assignmentId);
+        setAssignments(prev => prev.filter(a => a.id !== assignmentId));
+        
+        // Erstelle einen Log-Eintrag für die Löschung
+        await dbService.addLogEntry(
+          'info',
+          `Schicht gelöscht`,
+          {
+            mitarbeiter: employee?.firstName || 'Unbekannt',
+            schicht: shift?.title || 'Unbekannt',
+            datum: format(new Date(assignment.date), 'dd.MM.yyyy'),
+            filiale: selectedStore?.name || 'Unbekannt'
+          }
+        );
+        
+        toast.success('Schicht wurde gelöscht');
+      }
     } catch (error) {
       console.error('Error deleting assignment:', error);
+      await dbService.addLogEntry('error', 'Fehler beim Löschen der Schicht');
       toast.error('Fehler beim Löschen der Schicht');
     }
   };
 
-  // Drag & Drop Handler
   const handleDragEnd = async (result: DropResult) => {
     console.log('Drag ended:', result);
     if (!result.destination || !selectedStore) {
@@ -221,7 +292,6 @@ export default function Arbeitsplan3Page() {
       draggableId: draggableId
     });
 
-    // Wenn die Zuweisung am gleichen Tag bleibt, nichts tun
     if (source.droppableId === destination.droppableId) {
       console.log('Same day, no update needed');
       return;
@@ -255,11 +325,29 @@ export default function Arbeitsplan3Page() {
 
       // Aktualisiere die Zuweisung in der Datenbank
       await dbService.updateAssignment(draggableId, updatedAssignment);
-      console.log('Database update successful');
       
+      // Hole Mitarbeiter- und Schichtinformationen für den Log-Eintrag
+      const employee = employees.find(e => e.id === assignment.employeeId);
+      const shift = shifts.find(s => s.id === assignment.shiftId);
+      
+      // Erstelle einen Log-Eintrag für die Verschiebung
+      await dbService.addLogEntry(
+        'info',
+        `Schicht verschoben`,
+        {
+          mitarbeiter: employee?.firstName || 'Unbekannt',
+          schicht: shift?.title || 'Unbekannt',
+          von: format(new Date(source.droppableId), 'dd.MM.yyyy'),
+          nach: format(new Date(destination.droppableId), 'dd.MM.yyyy'),
+          filiale: selectedStore.name
+        }
+      );
+      
+      console.log('Database update successful');
       toast.success('Schicht wurde verschoben');
     } catch (error) {
       console.error('Error updating assignment:', error);
+      await dbService.addLogEntry('error', 'Fehler beim Verschieben der Schicht');
       toast.error('Fehler beim Verschieben der Schicht');
       
       // Nur im Fehlerfall die Daten neu laden
@@ -300,7 +388,7 @@ export default function Arbeitsplan3Page() {
                 }
               }}
             >
-              <option value="">Filiale auswählen</option>
+             
               {stores.map(store => (
                 <option key={store.id} value={store.id}>
                   {store.name}
@@ -360,8 +448,8 @@ export default function Arbeitsplan3Page() {
             </div>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg ">
+          {/* Calendar Container */}
+          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg">
             {/* Weekday Headers */}
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
               <div key={day} className="bg-gray-50 p-2 text-center font-medium text-gray-600">

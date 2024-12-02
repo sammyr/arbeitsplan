@@ -270,6 +270,17 @@ select[multiple] option:hover {
   box-shadow: 0 0 0 1px #3b82f6;
 }
 
+/* Remove outline on focus for input fields */
+input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Optional: Subtle border color change on focus instead */
+input:focus {
+  border-color: #e5e7eb !important;
+}
+
 /* Event edit popup styles */
 .rbc-event .group:hover {
   z-index: var(--z-calendar-controls) !important;
@@ -370,6 +381,15 @@ input[type="checkbox"] {
   -moz-appearance: none;
 }
 
+/* Settings Page Input Styles */
+.settings-input {
+  @apply border border-gray-300 rounded-md px-4 py-2 w-full focus:ring-0 focus:outline-none focus:border-blue-500 transition-colors duration-200;
+}
+
+.settings-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 .fixed.inset-0 > div, [class*="modal-content"] {
   background: none !important;

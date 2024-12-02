@@ -17,19 +17,19 @@ const features = [
     name: 'Arbeitsplan-Kalender',
     description: 'Anzeigen und Verwalten von Mitarbeiterplänen in einem interaktiven Kalender.',
     icon: MdCalendarMonth,
-    href: '/workplan',
+    href: '/arbeitsplan3',
   },
   {
     name: 'Mitarbeiter-verwaltung',
     description: 'Hinzufügen, Bearbeiten und Verwalten von Mitarbeiter-informationen.',
     icon: MdPeople,
-    href: '/employees',
+    href: '/mitarbeiter',
   },
   {
     name: 'Arbeitszeiten',
     description: 'Konfigurieren und Verwalten von Arbeitszeitplänen.',
     icon: MdAccessTime,
-    href: '/shifts',
+    href: '/schichten2',
   },
   {
     name: 'Einstellungen',
