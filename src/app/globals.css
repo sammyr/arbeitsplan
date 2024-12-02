@@ -391,8 +391,3 @@ input[type="checkbox"] {
   box-shadow: none !important;
 }
 
-.fixed.inset-0 > div, [class*="modal-content"] {
-  background: none !important;
-
-  box-shadow: 0 0px 0px -5px rgba(0, 0, 0, 0.0), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-}

@@ -66,7 +66,7 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -83,7 +83,7 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                     className="text-2xl font-semibold text-slate-800 mb-6"
                     id="modal-title"
                   >
-                    Schicht zuweisen für {format(date, 'dd.MM.yyyy')}
+                    Schicht zuweisen für den {format(date, 'dd.MM')}
                   </Dialog.Title>
 
                   <div className="space-y-4">
@@ -161,7 +161,7 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                 </div>
               </Dialog.Panel>
             </Transition.Child>
-          </div>
+          
         </div>
       </Dialog>
     </Transition>

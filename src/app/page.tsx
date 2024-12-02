@@ -23,7 +23,7 @@ const features = [
     name: 'Mitarbeiter-verwaltung',
     description: 'Hinzufügen, Bearbeiten und Verwalten von Mitarbeiter-informationen.',
     icon: MdPeople,
-    href: '/mitarbeiter',
+    href: '/employees',
   },
   {
     name: 'Arbeitszeiten',
