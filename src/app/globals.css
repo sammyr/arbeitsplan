@@ -402,3 +402,79 @@ input:focus {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* PDF Export Styles */
+.pdf-export {
+  background: white !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.pdf-export table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.pdf-export th,
+.pdf-export td {
+  border: 1px solid #e5e7eb !important;
+  padding: 8px !important;
+  text-align: left !important;
+}
+
+.pdf-export th {
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+}
+
+.pdf-export .calendar-day {
+  min-height: 120px !important;
+  height: auto !important;
+}
+
+.pdf-export .calendar-header {
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  padding: 8px !important;
+}
+
+/* Ensure good contrast for PDF */
+.pdf-export * {
+  color: #000 !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* Optimize calendar grid for PDF */
+.pdf-export .calendar-grid {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 1px !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* Style assignments in PDF */
+.pdf-export .assignment {
+  margin: 4px 0 !important;
+  padding: 4px !important;
+  background-color: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+}
+
+/* Ensure text readability */
+.pdf-export .text-xs {
+  font-size: 10px !important;
+}
+
+.pdf-export .text-sm {
+  font-size: 12px !important;
+}
+
+.pdf-export .text-base {
+  font-size: 14px !important;
+}

@@ -12,10 +12,9 @@ import { dbService } from '@/lib/db';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import ShiftAssignmentModal from '@/components/ShiftAssignmentModal';
-import { storage } from '@/lib/storage'; 
-import ReactDOM from 'react-dom';
-import { MdPictureAsPdf, MdFileDownload } from 'react-icons/md';
 import { initialSelectedStore, initialStores } from '@/lib/initialData';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Funktion zum Laden der Store-Daten
 const loadStoreData = async (
@@ -46,12 +45,10 @@ const loadStoreData = async (
     console.log('Loaded assignments:', loadedAssignments);
 
     // Batch-Update der States
-    ReactDOM.unstable_batchedUpdates(() => {
-      setEmployees(loadedEmployees);
-      setShifts(loadedShifts);
-      setAssignments(loadedAssignments);
-      setIsLoading(false);
-    });
+    setIsLoading(false);
+    setEmployees(loadedEmployees);
+    setShifts(loadedShifts);
+    setAssignments(loadedAssignments);
 
     console.log('Store data loaded successfully');
   } catch (error) {
@@ -81,118 +78,64 @@ const getEmptyCellCount = (date: Date) => {
   return day === 0 ? 6 : day - 1;
 };
 
-export default function Arbeitsplan3Page() {
+const Arbeitsplan3Page = memo(() => {
   // State Management
-  const [currentDate, setCurrentDate] = useState<Date>(() => {
-    // Versuche das gespeicherte Datum zu laden, wenn verfügbar
-    if (typeof window !== 'undefined') {
-      const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
-      if (savedDate) {
-        const parsedDate = new Date(savedDate);
-        parsedDate.setHours(0, 0, 0, 0);
-        return parsedDate;
-      }
-    }
-    // Fallback auf aktuelles Datum
-    const date = new Date();
-    date.setHours(0, 0, 0, 0);
-    return date;
-  });
-
-  const [selectedStore, setSelectedStore] = useState<Store | null>(() => {
-    // Versuche die gespeicherte Filiale zu laden
-    if (typeof window !== 'undefined') {
-      const savedStoreId = localStorage.getItem('arbeitsplan3_selectedStore');
-      if (savedStoreId) {
-        const savedStore = storage.getStores().find(store => store.id === savedStoreId);
-        if (savedStore) {
-          return savedStore;
-        }
-      }
-    }
-    // Fallback auf die Standard-Filiale
-    return initialSelectedStore;
-  });
-
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<WorkingShift[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<ShiftAssignment | null>(null);
 
-  // Speichere das aktuelle Datum bei jeder Änderung
+  // Initialisiere den Store und lade die Daten
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('arbeitsplan3_currentDate', currentDate.toISOString());
-    }
-  }, [currentDate]);
+    const initializeData = async () => {
+      try {
+        // Lade gespeicherte Store-ID
+        const savedStoreId = localStorage.getItem('selectedStoreId');
+        const initialStore = savedStoreId 
+          ? initialStores.find(s => s.id === savedStoreId) 
+          : initialSelectedStore;
+        
+        setStores(initialStores);
+        setSelectedStore(initialStore);
 
-  // Speichere die ausgewählte Filiale bei jeder Änderung
-  useEffect(() => {
-    if (typeof window !== 'undefined' && selectedStore) {
-      localStorage.setItem('arbeitsplan3_selectedStore', selectedStore.id);
-    }
-  }, [selectedStore]);
-
-  // Lade das gespeicherte Datum nur client-seitig
-  useEffect(() => {
-    const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
-    if (savedDate) {
-      const parsedDate = new Date(savedDate);
-      parsedDate.setHours(0, 0, 0, 0);
-      setCurrentDate(parsedDate);
-    }
-  }, []);
-
-  // Lade initiale Daten
-  const loadInitialData = async () => {
-    try {
-      setIsLoading(true);
-      
-      console.log('Loading initial stores...');
-      // Hole Stores aus dem Storage
-      let loadedStores = storage.getStores();
-      
-      // Wenn keine Stores im Storage sind, initialisiere mit initialStores
-      if (loadedStores.length === 0) {
-        initialStores.forEach(store => storage.saveStore(store));
-        loadedStores = initialStores;
-      }
-      
-      setStores(loadedStores);
-      
-      // Load selected store from localStorage if available
-      const savedStoreId = localStorage.getItem('arbeitsplan3_selectedStore');
-      if (savedStoreId) {
-        const savedStore = loadedStores.find(store => store.id === savedStoreId);
-        if (savedStore) {
-          setSelectedStore(savedStore);
-          await loadStoreData(savedStore, setIsLoading, setEmployees, setShifts, setAssignments);
+        // Lade gespeichertes Datum
+        const savedDate = localStorage.getItem('currentDate');
+        if (savedDate) {
+          setCurrentDate(new Date(savedDate));
         }
-      } else if (loadedStores.length > 0) {
-        // Wenn kein Store ausgewählt ist, aber Stores vorhanden sind, wähle den ersten
-        setSelectedStore(loadedStores[0]);
-        await loadStoreData(loadedStores[0], setIsLoading, setEmployees, setShifts, setAssignments);
+      } catch (error) {
+        console.error('Error initializing data:', error);
       }
-      
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error loading initial data:', error);
-      toast.error('Fehler beim Laden der Daten');
-      setIsLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
-    loadInitialData();
+    initializeData();
   }, []);
 
+  // Lade Daten wenn sich der Store ändert
   useEffect(() => {
-    loadStoreData(selectedStore, setIsLoading, setEmployees, setShifts, setAssignments);
+    if (selectedStore) {
+      loadStoreData(
+        selectedStore,
+        setIsLoading,
+        setEmployees,
+        setShifts,
+        setAssignments
+      );
+      // Speichere ausgewählten Store
+      localStorage.setItem('selectedStoreId', selectedStore.id);
+    }
   }, [selectedStore]);
+
+  // Speichere aktuelles Datum
+  useEffect(() => {
+    localStorage.setItem('currentDate', currentDate.toISOString());
+  }, [currentDate]);
 
   // Funktion um die Tage für den aktuellen Monat zu berechnen
   const getDaysInMonth = (date: Date) => {
@@ -569,6 +512,10 @@ export default function Arbeitsplan3Page() {
     }
   };
 
+  const handlePrint = () => {
+    toast.success('Drucken wird vorbereitet...');
+  };
+
   // Berechne die Gesamtstunden pro Mitarbeiter für den aktuellen Monat
   const calculateMonthlyHours = () => {
     const monthlyHours: { [key: string]: number } = {};
@@ -585,10 +532,121 @@ export default function Arbeitsplan3Page() {
     return monthlyHours;
   };
 
-  // Handler für die Export-Funktionen
-  const handlePDFExport = () => {
-    toast.success('PDF Export wird vorbereitet...');
-    // TODO: Implementiere PDF Export
+  const handlePDFExport = async () => {
+    try {
+      setIsLoading(true);
+      toast.loading('PDF wird erstellt...');
+
+      // Capture the calendar view
+      const calendarElement = document.getElementById('calendar-container');
+      if (!calendarElement) {
+        throw new Error('Calendar element not found');
+      }
+
+      // Create PDF with landscape orientation
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Add metadata
+      pdf.setProperties({
+        title: `Arbeitsplan ${format(currentDate, 'MMMM yyyy', { locale: de })}`,
+        subject: 'Monatsplan',
+        author: 'Arbeitsplan System',
+        keywords: 'arbeitsplan, schedule, calendar',
+        creator: 'Arbeitsplan System'
+      });
+
+      // Capture and add calendar page
+      const canvas = await html2canvas(calendarElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      pdf.addImage(imgData, 'JPEG', 10, 10, 277, 190);
+
+      // Add new page for working hours table (keep landscape orientation)
+      pdf.addPage('a4', 'l');
+      
+      // Add title for the hours table
+      pdf.setFontSize(20);
+      pdf.text(`Arbeitsstunden ${format(currentDate, 'MMMM yyyy', { locale: de })}`, 148.5, 20, { align: 'center' });
+      
+      // Calculate and prepare hours data
+      const employeeHours = employees.map(employee => {
+        const monthlyHours = calculateMonthlyHours()[employee.id] || 0;
+        return {
+          name: `${employee.firstName} ${employee.lastName}`,
+          hours: monthlyHours
+        };
+      }).sort((a, b) => a.name.localeCompare(b.name));
+
+      // Set up table
+      pdf.setFontSize(12);
+      const tableHeaders = ['Mitarbeiter', 'Stunden'];
+      const tableData = employeeHours.map(emp => [emp.name, emp.hours.toFixed(2)]);
+      
+      // Calculate total hours
+      const totalHours = employeeHours.reduce((sum, emp) => sum + emp.hours, 0);
+      tableData.push(['Gesamt', totalHours.toFixed(2)]);
+
+      // Add table with adjusted dimensions for landscape
+      const startY = 35;
+      const startX = 74; // Centered in landscape
+      const cellWidth = [150, 50];
+      const cellHeight = 10;
+      
+      // Draw table headers
+      pdf.setFont('helvetica', 'bold');
+      tableHeaders.forEach((header, i) => {
+        const x = startX + (i === 0 ? 0 : cellWidth[0]);
+        pdf.rect(x, startY, cellWidth[i], cellHeight);
+        if (i === 0) {
+          pdf.text(header, x + 5, startY + 7);
+        } else {
+          pdf.text(header, x + cellWidth[i] - 5, startY + 7, { align: 'right' });
+        }
+      });
+
+      // Draw table data
+      pdf.setFont('helvetica', 'normal');
+      tableData.forEach((row, rowIndex) => {
+        const y = startY + ((rowIndex + 1) * cellHeight);
+        row.forEach((cell, cellIndex) => {
+          const x = startX + (cellIndex === 0 ? 0 : cellWidth[0]);
+          pdf.rect(x, y, cellWidth[cellIndex], cellHeight);
+          
+          // Right align hours, left align names
+          if (cellIndex === 0) {
+            pdf.text(cell, x + 5, y + 7);
+          } else {
+            pdf.text(cell, x + cellWidth[cellIndex] - 5, y + 7, { align: 'right' });
+          }
+        });
+        
+        // Make the total row bold
+        if (rowIndex === tableData.length - 1) {
+          pdf.setFont('helvetica', 'bold');
+        }
+      });
+
+      // Save the PDF
+      const fileName = `Arbeitsplan_${format(currentDate, 'yyyy-MM', { locale: de })}.pdf`;
+      pdf.save(fileName);
+
+      toast.dismiss();
+      toast.success('PDF erfolgreich erstellt!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.dismiss();
+      toast.error('Fehler beim Erstellen der PDF');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleExcelExport = () => {
@@ -596,24 +654,19 @@ export default function Arbeitsplan3Page() {
     // TODO: Implementiere Excel Export
   };
 
-  const handlePrint = () => {
-    toast.success('Drucken wird vorbereitet...');
-  };
-
   const handleStoreChange = (storeId: string) => {
     const store = stores.find(s => s.id === storeId);
     setSelectedStore(store || null);
-    // Save selected store ID to localStorage
     if (store) {
-      localStorage.setItem('arbeitsplan3_selectedStore', store.id);
+      localStorage.setItem('selectedStoreId', store.id);
     } else {
-      localStorage.removeItem('arbeitsplan3_selectedStore');
+      localStorage.removeItem('selectedStoreId');
     }
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-6 pb-24">
-      <div className="max-w-full md:max-w-7xl mx-auto space-y-6">
+    <>
+      <div className="p-4 md:p-6 max-w-[1920px] mx-auto">
         {/* Header mit Store-Auswahl und Navigation */}
         <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6">
           <div className="flex flex-col gap-4">
@@ -654,7 +707,9 @@ export default function Arbeitsplan3Page() {
                     onClick={handlePDFExport}
                     className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                   >
-                    <MdPictureAsPdf className="w-5 h-5 mr-2" />
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2m8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
                     PDF Export
                   </button>
 
@@ -662,7 +717,9 @@ export default function Arbeitsplan3Page() {
                     onClick={handleExcelExport}
                     className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                   >
-                    <MdFileDownload className="w-5 h-5 mr-2" />
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
                     Excel Export
                   </button>
 
@@ -672,7 +729,7 @@ export default function Arbeitsplan3Page() {
                     title="Drucken ist momentan nicht verfügbar"
                   >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2m8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     Drucken
                   </button>
@@ -696,7 +753,9 @@ export default function Arbeitsplan3Page() {
         </div>
 
         {/* Calendar Grid */}
-        {renderCalendar()}
+        <div id="calendar-container" className="calendar-container bg-white rounded-xl shadow-sm p-4 md:p-6 overflow-x-auto">
+          {renderCalendar()}
+        </div>
 
         {/* Monthly Hours Overview */}
         <div className="bg-white rounded-xl shadow-sm p-6">
@@ -772,6 +831,8 @@ export default function Arbeitsplan3Page() {
           initialWorkingHours={editingAssignment?.workHours || 8}
         />
       )}
-    </div>
+    </>
   );
-}
+});
+
+export default Arbeitsplan3Page;
