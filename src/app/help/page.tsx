@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { HiRocketLaunch, HiClipboardDocument, HiChatBubbleLeftRight, HiBookOpen, HiEnvelope, HiPhone, HiScale } from 'react-icons/hi2';
+import { HiLightBulb, HiClipboardDocument, HiChatBubbleLeftRight, HiBookOpen, HiEnvelope, HiPhone, HiScale } from 'react-icons/hi2';
 
 export default function HelpPage() {
   return (
@@ -18,21 +18,21 @@ export default function HelpPage() {
             className="rounded-lg"
           />
         </div>
-        <h1 className="text-4xl font-bold mb-2 text-slate-800">Arbeitsplan Manager</h1>
-        <p className="text-slate-600 mb-4">Version 0.52</p>
+        <h1 className="text-3xl font-bold mb-2">Arbeitsplan Manager</h1>
+        <span className="text-sm text-gray-500 mb-6">Version 0.52 (Beta)</span>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
         <section>
           <h2 className="text-2xl font-semibold mb-6 text-slate-800 flex items-center">
             <span className="bg-emerald-100 p-2 rounded-lg mr-3">
-              <HiRocketLaunch className="w-5 h-5 text-emerald-600" />
+              <HiLightBulb className="w-5 h-5 text-emerald-600" />
             </span>
             Geplant
           </h2>
           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-l-4 border-emerald-400 p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
             <ul className="list-disc pl-5 text-slate-700 space-y-3">
-            <li>Erstellung von Arbeitsschichten durch Spracheingabe</li>
+              <li>Erstellung von Arbeitsschichten durch Spracheingabe</li>
               <li>Erweiterte Benachrichtigungen:
                 <ul className="list-circle pl-5 mt-2 space-y-2">
                   <li>Schichtwechsel Informationen</li>
@@ -48,13 +48,12 @@ export default function HelpPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-6 text-slate-800 flex items-center">
             <span className="bg-emerald-100 p-2 rounded-lg mr-3">
-              <HiRocketLaunch className="w-5 h-5 text-emerald-600" />
+              <HiLightBulb className="w-5 h-5 text-emerald-600" />
             </span>
             Demnächst
           </h2>
           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-l-4 border-emerald-400 p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
             <ul className="list-disc pl-5 text-slate-700 space-y-3">
-              
               <li>PDF Download - Arbeitsplan ausdrucken und als PDF exportieren</li>
               <li>Registrierung / Login</li>
               <li>Arbeitsplan an alle Mitarbeiter senden</li>
@@ -73,14 +72,21 @@ export default function HelpPage() {
             <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
               <h3 className="text-lg font-medium text-slate-800">Version 0.52 (Dezember 2024)</h3>
               <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
-                <li>Excel-Export für Arbeitsstunden mit zwei Tabellenblättern:
+                <li>Excel-Export für Arbeitsstunden:
                   <ul className="list-circle pl-5 mt-2 space-y-2">
-                    <li>Filialarbeitsstunden - Detaillierte Stundenaufstellung pro Filiale</li>
+                    <li>Separate Tabellenblätter für jede Filiale</li>
+                    <li>Detaillierte Stundenaufstellung pro Mitarbeiter</li>
                     <li>Gesamtstunden - Übersicht der Gesamtstunden pro Mitarbeiter</li>
                   </ul>
                 </li>
+                <li>Verbesserte Benutzeroberfläche:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Neue Beschreibungen für bessere Benutzerführung</li>
+                    <li>Überarbeitete Menüpunkte und Navigationselemente</li>
+                    <li>Optimierte Darstellung der Arbeitsstunden</li>
+                  </ul>
+                </li>
                 <li>Verbesserte Stundenberechnung und Synchronisation zwischen Arbeitsplan und Auswertungen</li>
-                <li>Optimierte Darstellung der Arbeitsstunden in der Auswertungsansicht</li>
               </ul>
             </div>
 
@@ -158,20 +164,55 @@ export default function HelpPage() {
             <p className="text-slate-600 mb-6">
               Bei Fragen oder Problemen wenden Sie sich bitte an unseren Support:
             </p>
-            <ul className="space-y-3 text-slate-600">
-              <li className="flex items-center">
-                <span className="bg-emerald-100 p-2 rounded-lg mr-3">
-                  <HiEnvelope className="w-5 h-5 text-emerald-600" />
-                </span>
-                Email: sammy@ssammyrichter.net
-              </li>
-              <li className="flex items-center">
-                <span className="bg-emerald-100 p-2 rounded-lg mr-3">
-                  <HiPhone className="w-5 h-5 text-emerald-600" />
-                </span>
-                Telefon: +49 (0) 123 456789
-              </li>
-            </ul>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-slate-800 mb-3">Support & Verwaltung</h3>
+                <ul className="space-y-3 text-slate-600">
+                  <li className="flex items-center">
+                    <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+                      <HiBookOpen className="w-5 h-5 text-emerald-600" />
+                    </span>
+                    Name: Silvia Kaspar
+                  </li>
+                  <li className="flex items-center">
+                    <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+                      <HiEnvelope className="w-5 h-5 text-emerald-600" />
+                    </span>
+                    E-Mail: <a href="mailto:sunny1366@web.de" className="text-emerald-600 hover:text-emerald-700 ml-1">sunny1366@web.de</a>
+                  </li>
+                  <li className="flex items-center">
+                    <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+                      <HiPhone className="w-5 h-5 text-emerald-600" />
+                    </span>
+                    Telefon: <a href="tel:+4915257440668" className="text-emerald-600 hover:text-emerald-700 ml-1">+49 (0) 1525 7440 668</a>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-slate-800 mb-3">Technischer Support</h3>
+                <ul className="space-y-3 text-slate-600">
+                  <li className="flex items-center">
+                    <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+                      <HiBookOpen className="w-5 h-5 text-emerald-600" />
+                    </span>
+                    Name: Sammy Richter
+                  </li>
+                  <li className="flex items-center">
+                    <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+                      <HiEnvelope className="w-5 h-5 text-emerald-600" />
+                    </span>
+                    E-Mail: <a href="mailto:sammy@sammyrichter.net" className="text-emerald-600 hover:text-emerald-700 ml-1">sammy@sammyrichter.net</a>
+                  </li>
+                  <li className="flex items-center">
+                    <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+                      <HiPhone className="w-5 h-5 text-emerald-600" />
+                    </span>
+                    Telefon: <a href="tel:+491765672637" className="text-emerald-600 hover:text-emerald-700 ml-1">+49 (0) 176 567 266 37</a>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -197,20 +238,6 @@ export default function HelpPage() {
                 Schauen Sie sich unsere Anleitungsvideos für detaillierte Erklärungen an.
               </p>
             </div>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-semibold mb-6 text-slate-800 flex items-center">
-            <span className="bg-emerald-100 p-2 rounded-lg mr-3">
-              <HiScale className="w-5 h-5 text-emerald-600" />
-            </span>
-            Rechtliches
-          </h2>
-          <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
-            <p className="text-slate-600">
-              2024 Arbeitsplan Manager. Alle Rechte vorbehalten.
-            </p>
           </div>
         </section>
       </div>

@@ -111,10 +111,10 @@ export default function Schichten2Page() {
 
   return (
     <div className="container mx-auto p-4 bg-transparent">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Arbeitszeiten (DB)</h1>
+      <div className="mb-12">
+        <h1 className="text-3xl font-bold text-slate-900 mb-3">Arbeitsschichten</h1>
         <p className="text-slate-600">
-          Liste aller Arbeitszeiten mit direkter Datenbankanbindung.
+          Liste aller Arbeitsschichten. Fügen Sie neue Arbeitsschichten hinzu um diese im Arbeitsplan zu verwenden.
         </p>
       </div>
 

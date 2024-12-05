@@ -202,8 +202,8 @@ export default function AuswertungenPage() {
       // Create workbook
       const wb = XLSX.utils.book_new();
       
-      // Prepare data for store hours sheet
-      const storeHoursData = stores.map(store => {
+      // Create separate worksheet for each store
+      stores.forEach(store => {
         const storeEmployees = employees.map(employee => {
           const hours = calculateHours(employee.id, store.id);
           if (hours <= 0) return null;
@@ -213,27 +213,25 @@ export default function AuswertungenPage() {
           };
         }).filter(Boolean);
 
-        if (storeEmployees.length === 0) return null;
+        if (storeEmployees.length === 0) return;
 
         const storeTotal = storeEmployees.reduce((total, emp: any) => total + parseFloat(emp['Stunden']), 0);
-        return {
-          'Filiale': store.name,
-          'Mitarbeiter': storeEmployees,
-          'Gesamt': storeTotal.toFixed(1)
-        };
-      }).filter(Boolean);
+        
+        // Create data for this store's worksheet
+        const storeData = [
+          ...storeEmployees,
+          { 'Mitarbeiter': '', 'Stunden': '' }, // Empty row
+          { 'Mitarbeiter': 'Gesamt', 'Stunden': storeTotal.toFixed(1) }
+        ];
 
-      // Create store hours worksheet
-      const storeHoursWS = XLSX.utils.json_to_sheet(
-        storeHoursData.filter(store => store !== null).flatMap(store => [
-          { 'Filiale': store.Filiale },
-          ...store.Mitarbeiter,
-          { 'Mitarbeiter': 'Gesamt', 'Stunden': store.Gesamt },
-          {} // Empty row between stores
-        ])
-      );
+        // Create worksheet for this store
+        const storeWS = XLSX.utils.json_to_sheet(storeData);
+        
+        // Add worksheet to workbook with store name as sheet name
+        XLSX.utils.book_append_sheet(wb, storeWS, store.name);
+      });
 
-      // Prepare data for total hours sheet
+      // Create total hours worksheet
       const totalHoursData = employees.map(employee => {
         const totalHours = calculateTotalHours(employee.id);
         if (totalHours <= 0) return null;
@@ -254,11 +252,8 @@ export default function AuswertungenPage() {
         { 'Mitarbeiter': 'Gesamt', 'Gesamtstunden': grandTotal.toFixed(1) }
       );
 
-      // Create total hours worksheet
+      // Create and add total hours worksheet
       const totalHoursWS = XLSX.utils.json_to_sheet(totalHoursData);
-
-      // Add worksheets to workbook
-      XLSX.utils.book_append_sheet(wb, storeHoursWS, 'Filialarbeitsstunden');
       XLSX.utils.book_append_sheet(wb, totalHoursWS, 'Gesamtstunden');
 
       // Generate Excel file
@@ -274,7 +269,13 @@ export default function AuswertungenPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Auswertungen</h1>
+      <div className="mb-12">
+        <h1 className="text-3xl font-bold text-slate-900 mb-3">Auswertungen</h1>
+        <p className="text-slate-600">
+          Übersicht aller Arbeitsstunden und Mitarbeiter innerhalb eines Monats.<br></br>
+          Hinweis: Die Daten können über Excel in dazu separat angelegten Tabellen exportiert werden. 
+        </p>
+      </div>
       
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200">

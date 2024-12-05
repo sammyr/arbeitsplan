@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MdCalendarMonth, MdPeople, MdAccessTime, MdSettings, MdBarChart } from 'react-icons/md';
+import { MdCalendarMonth, MdPeople, MdAccessTime, MdSettings, MdBarChart, MdAssessment, MdBook, MdHelp } from 'react-icons/md';
 
 export const metadata = {
   title: 'Arbeitsplan - Effiziente Mitarbeiterplanung',
@@ -32,8 +32,26 @@ const features = [
     href: '/schichten2',
   },
   {
+    name: 'Auswertungen',
+    description: 'Detaillierte Analysen und Berichte der Arbeitszeiten.',
+    icon: MdAssessment,
+    href: '/auswertungen',
+  },
+  {
+    name: 'Logbuch',
+    description: 'Protokollierung und Übersicht aller wichtigen Ereignisse.',
+    icon: MdBook,
+    href: '/logbuch',
+  },
+  {
+    name: 'Hilfe',
+    description: 'Anleitungen und Hilfestellung zur Nutzung des Systems.',
+    icon: MdHelp,
+    href: '/help',
+  },
+  {
     name: 'Einstellungen',
-    description: 'Konfigurieren Sie E-Mail-Benachrichtigungen und andere Systemeinstellungen.',
+    description: 'Konfigurieren Sie EMail Benach-richtigungen und andere Systemeinstellungen.',
     icon: MdSettings,
     href: '/settings',
   },
