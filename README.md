@@ -7,31 +7,36 @@ Arbeitsplan is a comprehensive shift planning and management system built with N
 ### 1. Shift Management
 - Create, edit, and delete shifts
 - Flexible shift scheduling with customizable time slots
-- Drag-and-drop calendar interface
+- Intuitive drag-and-drop calendar interface
 - Automatic working hours calculation
+- Horizontal scrolling support for better mobile experience
 
 ### 2. Employee Management
 - Maintain employee records
 - Track employee availability
 - Assign shifts to employees
 - Monitor individual working hours
+- Sort employees by total working hours
 
 ### 3. Store Management
 - Multi-store support
 - Store-specific shift planning
 - Individual store reports
+- Quick store switching via dropdown
 
-### 4. Reporting and Analytics
-- Monthly working hours reports
-- Store-wise shift distribution
-- Employee workload analysis
-- Export reports to Excel
+### 4. Export Options
+- PDF export functionality
+- Excel export for detailed analysis
+- Print view support
+- Customizable export formats
 
 ### 5. User Interface
 - Modern, responsive design
-- Intuitive calendar view
+- Mobile-optimized layout
+- Intuitive calendar view with month navigation
 - Easy-to-use forms and modals
 - Real-time updates
+- Adaptive layout for different screen sizes
 
 ## Getting Started
 
@@ -54,59 +59,46 @@ npm install
 yarn install
 ```
 
-3. Start the development server:
+3. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Building for Production
-
-```bash
-npm run build
-npm start
-```
-
-## Project Structure
-
-```
-arbeitsplan/
-├── src/
-│   ├── app/                 # Next.js app directory
-│   ├── components/         # Reusable React components
-│   ├── lib/               # Utilities and services
-│   └── types/             # TypeScript type definitions
-├── public/               # Static assets
-└── package.json         # Project dependencies and scripts
-```
+4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
 ## Key Components
 
-### Shift Assignment
-- `ShiftAssignmentModal`: Modal for assigning shifts to employees
-- `WorkplanForm`: Form for creating and editing shifts
-- Calendar integration with drag-and-drop functionality
+### Calendar View
+- Monthly calendar display
+- Drag-and-drop shift management
+- Horizontal scrolling for mobile devices
+- Visual indicators for shifts and assignments
 
-### Reporting
-- Monthly hours calculation
-- Excel export functionality
-- Detailed analytics views
+### Working Hours Overview
+- Monthly hours summary
+- Per-employee hour tracking
+- Automatic calculations
+- Sortable by hours worked
+
+### Export Tools
+- Multiple export format options
+- Print-friendly layouts
+- Data export for analysis
+
+## Mobile Support
+
+The application is fully responsive and optimized for mobile devices:
+- Horizontal scrolling for calendar view
+- Adaptive layouts for different screen sizes
+- Touch-friendly interface
+- Optimized button and input sizes for mobile
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/YourFeature`)
-5. Create a new Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support, please open an issue in the GitHub repository or contact the development team.
