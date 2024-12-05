@@ -318,14 +318,21 @@ export const dbService = {
     return db.shifts.find(shift => shift.id === id);
   },
 
-  async addShift(shift: Omit<Shift, 'id'>): Promise<Shift> {
+  async addShift(shift: { title: string; startTime: string; endTime: string }): Promise<WorkingShift> {
     const db = await readDb();
     if (!db) throw new Error('Database not initialized');
 
     const id = crypto.randomUUID();
-    const newShift: Shift = {
-      ...shift,
+    const newShift: WorkingShift = {
       id,
+      title: shift.title,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      employeeId: '',
+      shiftId: '',
+      storeId: '',
+      workHours: 8,
+      date: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -395,8 +402,13 @@ export const dbService = {
     const newShift: WorkingShift = {
       id,
       title: shift.title,
-      start: shift.start,
-      end: shift.end,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      employeeId: '',
+      shiftId: '',
+      storeId: '',
+      workHours: 8,
+      date: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

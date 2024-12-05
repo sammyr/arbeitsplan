@@ -103,9 +103,10 @@ export const initialShifts: WorkingShift[] = [
     startTime: '06:00',
     endTime: '14:00',
     employeeId: '',
-    date: '',
+    date: new Date().toISOString(),
     shiftId: '',
     storeId: '',
+    workHours: 8,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -115,9 +116,23 @@ export const initialShifts: WorkingShift[] = [
     startTime: '14:00',
     endTime: '22:00',
     employeeId: '',
-    date: '',
+    date: new Date().toISOString(),
     shiftId: '',
     storeId: '',
+    workHours: 8,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '3',
+    title: 'Nachtschicht',
+    startTime: '22:00',
+    endTime: '06:00',
+    employeeId: '',
+    date: new Date().toISOString(),
+    shiftId: '',
+    storeId: '',
+    workHours: 8,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }

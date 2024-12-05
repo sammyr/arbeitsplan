@@ -60,7 +60,7 @@ export default function AuswertungenPage() {
             id: a.id,
             date: a.date,
             employeeId: a.employeeId,
-            workingHours: a.workingHours,
+            workHours: a.workHours,
             shiftId: a.shiftId,
             storeId: a.storeId
           }))
@@ -76,7 +76,7 @@ export default function AuswertungenPage() {
         assignments: allAssignments.length,
         assignmentDates: allAssignments.map(a => ({
           date: a.date,
-          workingHours: a.workingHours,
+          workHours: a.workHours,
           storeId: a.storeId
         })),
         stores: stores.length
@@ -117,7 +117,7 @@ export default function AuswertungenPage() {
         if (matches) {
           console.log('Found matching assignment:', {
             date: assignment.date,
-            workingHours: assignment.workingHours,
+            workHours: assignment.workHours,
             storeId: assignment.storeId
           });
         }
@@ -134,7 +134,7 @@ export default function AuswertungenPage() {
     });
 
     const totalHours = filteredAssignments.reduce((total, assignment) => {
-      const hours = assignment.workingHours || 0;
+      const hours = assignment.workHours || 0;
       console.log('Adding hours:', {
         date: assignment.date,
         hours,
@@ -171,7 +171,7 @@ export default function AuswertungenPage() {
     );
 
     return filteredAssignments.reduce((total, assignment) => {
-      return total + (assignment.workingHours || 0);
+      return total + (assignment.workHours || 0);
     }, 0);
   };
 
@@ -225,7 +225,7 @@ export default function AuswertungenPage() {
 
       // Create store hours worksheet
       const storeHoursWS = XLSX.utils.json_to_sheet(
-        storeHoursData.flatMap(store => [
+        storeHoursData.filter(store => store !== null).flatMap(store => [
           { 'Filiale': store.Filiale },
           ...store.Mitarbeiter,
           { 'Mitarbeiter': 'Gesamt', 'Stunden': store.Gesamt },
@@ -244,9 +244,13 @@ export default function AuswertungenPage() {
       }).filter(Boolean);
 
       // Add total row to total hours data
-      const grandTotal = totalHoursData.reduce((total, emp) => total + parseFloat(emp['Gesamtstunden']), 0);
+      const grandTotal = totalHoursData
+        .filter((emp): emp is { Mitarbeiter: string; Gesamtstunden: string } => 
+          emp !== null && emp['Gesamtstunden'] !== undefined && emp['Mitarbeiter'] !== undefined
+        )
+        .reduce((total, emp) => total + parseFloat(emp['Gesamtstunden']), 0);
       totalHoursData.push(
-        {}, // Empty row
+        { 'Mitarbeiter': '', 'Gesamtstunden': '' }, // Empty row
         { 'Mitarbeiter': 'Gesamt', 'Gesamtstunden': grandTotal.toFixed(1) }
       );
 
@@ -273,28 +277,26 @@ export default function AuswertungenPage() {
       <h1 className="text-2xl font-bold mb-6">Auswertungen</h1>
       
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200">
-            <button
-              onClick={previousMonth}
-              className="p-2 hover:bg-gray-50 rounded-l-lg border-r"
-              aria-label="Vorheriger Monat"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            
-            <div className="px-4 py-2 text-gray-700 font-medium">
-              {format(selectedDate, 'MMMM yyyy', { locale: de })}
-            </div>
-            
-            <button
-              onClick={nextMonth}
-              className="p-2 hover:bg-gray-50 rounded-r-lg border-l"
-              aria-label="Nächster Monat"
-            >
-              <ChevronRightIcon className="h-5 w-5 text-gray-600" />
-            </button>
+        <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200">
+          <button
+            onClick={previousMonth}
+            className="p-2 hover:bg-gray-50 rounded-l-lg border-r"
+            aria-label="Vorheriger Monat"
+          >
+            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+          </button>
+          
+          <div className="px-4 py-2 text-gray-700 font-medium">
+            {format(selectedDate, 'MMMM yyyy', { locale: de })}
           </div>
+          
+          <button
+            onClick={nextMonth}
+            className="p-2 hover:bg-gray-50 rounded-r-lg border-l"
+            aria-label="Nächster Monat"
+          >
+            <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+          </button>
         </div>
 
         <button

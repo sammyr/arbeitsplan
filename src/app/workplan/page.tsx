@@ -616,40 +616,39 @@ const WorkplanPage = () => {
     }
   }, [selectedStore, employees, workingShifts, setEvents, showAlert]);
 
-  const handleCreateShift = useCallback(async (shiftData: Partial<Shift>) => {
+  const handleCreateShift = useCallback(async (shiftData: { 
+    employeeId: string; 
+    shiftId: string; 
+    startTime: string; 
+    endTime: string;
+    date: string;
+  }) => {
     console.log('handleCreateShift called');  // Check if function is called
     try {
       if (!selectedStore) {
         throw new Error('Kein Geschäft ausgewählt');
       }
 
-      // Create new shift
-      const newShift: Omit<Shift, 'id'> = {
-        title: shiftData.title || '',
-        workHours: shiftData.workHours || 0,
-        employeeId: shiftData.employeeId || '',
-        date: shiftData.date || new Date().toISOString(),
-        startTime: shiftData.startTime || '09:00',
-        endTime: shiftData.endTime || '17:00',
-        shiftId: shiftData.shiftId || '',
-        storeId: selectedStore.id,
-        color: shiftData.color,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const createdShift = await dbService.addShift(newShift);
-
-      // Find the employee and shift for the new event
-      const employee = employees.find(e => e.id === createdShift.employeeId);
-      const shift = await dbService.getShift(createdShift.shiftId);
+      // Find the employee and shift first
+      const employee = employees.find(e => e.id === shiftData.employeeId);
+      const shift = workingShifts.find(s => s.id === shiftData.shiftId);
 
       if (!employee || !shift) {
         throw new Error('Mitarbeiter oder Schicht nicht gefunden');
       }
 
+      // Create new shift
+      const newShift = {
+        title: `${employee.firstName} ${employee.lastName} - ${shift.title}`,
+        startTime: shiftData.startTime,
+        endTime: shiftData.endTime
+      };
+
+      const createdShift = await dbService.addShift(newShift);
+      console.log('Created shift:', createdShift);
+
       // Create the calendar event
-      const shiftDate = new Date(createdShift.date);
+      const shiftDate = new Date(shiftData.date);
 
       const newEvent: CalendarEvent = {
         id: createdShift.id,
@@ -676,7 +675,7 @@ const WorkplanPage = () => {
       showAlert('Fehler beim Erstellen der Schicht: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'), 'error');
       throw error;
     }
-  }, [selectedStore, employees, setEvents, showAlert]);
+  }, [selectedStore, employees, workingShifts, setEvents, showAlert]);
 
   const calendarOptions = useMemo(() => ({
     defaultView: 'month' as View,

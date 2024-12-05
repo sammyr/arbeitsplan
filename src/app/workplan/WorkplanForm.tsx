@@ -21,7 +21,13 @@ interface WorkplanFormProps {
   storeId: string;
   onClose: () => void;
   selectedDate: Date | null;
-  onCreate: (shiftData: Partial<Shift>) => Promise<void>;
+  onCreate: (shiftData: { 
+    employeeId: string; 
+    shiftId: string; 
+    startTime: string; 
+    endTime: string;
+    date: string;
+  }) => Promise<void>;
   onUpdate: (oldShift: any, newShiftData: any, newWorkingShift: any) => Promise<void>;
 }
 

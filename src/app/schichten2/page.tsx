@@ -44,6 +44,7 @@ export default function Schichten2Page() {
         endTime: '17:00',
         shiftId: '',
         storeId: '',
+        workHours: 8,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

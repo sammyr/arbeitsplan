@@ -210,17 +210,18 @@ export default function Arbeitsplan3Page() {
     try {
       if (editingAssignment) {
         // Update existing assignment
-        const updatedAssignment = {
-          ...editingAssignment,
+        const assignmentUpdate = {
           employeeId,
           shiftId,
-          workingHours,
+          storeId: selectedStore.id,
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          workHours: workingHours,
           updatedAt: new Date().toISOString()
         };
 
-        await dbService.updateAssignment(editingAssignment.id, updatedAssignment);
+        await dbService.updateAssignment(editingAssignment.id, assignmentUpdate);
         setAssignments(prev => prev.map(a => 
-          a.id === editingAssignment.id ? updatedAssignment : a
+          a.id === editingAssignment.id ? { ...a, ...assignmentUpdate } : a
         ));
 
         const employee = employees.find(e => e.id === employeeId);
@@ -233,7 +234,7 @@ export default function Arbeitsplan3Page() {
             mitarbeiter: employee?.firstName || 'Unbekannt',
             schicht: shift?.title || 'Unbekannt',
             stunden: workingHours,
-            datum: format(new Date(updatedAssignment.date), 'dd.MM.yyyy'),
+            datum: format(new Date(assignmentUpdate.date), 'dd.MM.yyyy'),
             filiale: selectedStore.name
           }
         );
@@ -246,7 +247,7 @@ export default function Arbeitsplan3Page() {
           shiftId,
           storeId: selectedStore.id,
           date: format(selectedDate, 'yyyy-MM-dd'),
-          workingHours,
+          workHours: workingHours,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -409,7 +410,7 @@ export default function Arbeitsplan3Page() {
       // Prüfe ob die Zuweisung im aktuellen Monat liegt
       if (isSameMonth(assignmentDate, currentDate)) {
         const employeeId = assignment.employeeId;
-        monthlyHours[employeeId] = (monthlyHours[employeeId] || 0) + (assignment.workingHours || 0);
+        monthlyHours[employeeId] = (monthlyHours[employeeId] || 0) + (assignment.workHours || 0);
       }
     });
 
@@ -595,7 +596,7 @@ export default function Arbeitsplan3Page() {
                                           <strong className="text-slate-900">{employee?.firstName}</strong> {shift?.title}
                                         </span>
                                         <span className="text-center text-slate-600 mt-1">
-                                          {assignment.workingHours} Stunden
+                                          {assignment.workHours} Stunden
                                         </span>
                                       </div>
                                     </div>
@@ -683,7 +684,7 @@ export default function Arbeitsplan3Page() {
           date={selectedDate}
           initialEmployeeId={editingAssignment?.employeeId}
           initialShiftId={editingAssignment?.shiftId}
-          initialWorkingHours={editingAssignment?.workingHours || 8}
+          initialWorkingHours={editingAssignment?.workHours || 8}
         />
       )}
     </div>
