@@ -13,9 +13,32 @@
   --z-modal-content: 10000;
 }
 
+html {
+  background: linear-gradient(135deg, #f8f7ff 0%, #f0eeff 100%) fixed;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  width: 100vw;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  background: transparent;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  overflow-x: hidden;
+}
+
+#__next {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 /* Calendar Styles */
@@ -370,17 +393,6 @@ input:focus {
   --tw-gradient-to: #fcfcfc var(--tw-gradient-to-position);
 }
 
-html {
-  background: linear-gradient(to bottom, #808080, #beccda) !important;
-  min-height: 180%;
-}
-
-input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-}
-
 /* Settings Page Input Styles */
 .settings-input {
   @apply border border-gray-300 rounded-md px-4 py-2 w-full focus:ring-0 focus:outline-none focus:border-blue-500 transition-colors duration-200;
@@ -390,4 +402,3 @@ input[type="checkbox"] {
   outline: none !important;
   box-shadow: none !important;
 }
-

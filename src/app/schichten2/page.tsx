@@ -9,7 +9,6 @@ import { toast } from 'react-hot-toast';
 export default function Schichten2Page() {
   const [shifts, setShifts] = useState<WorkingShift[]>([]);
   const [newShiftTitle, setNewShiftTitle] = useState('');
-  const [newShiftHours, setNewShiftHours] = useState('8');
   const [editingShift, setEditingShift] = useState<WorkingShift | null>(null);
 
   useEffect(() => {
@@ -36,16 +35,9 @@ export default function Schichten2Page() {
       return;
     }
 
-    const hours = parseFloat(newShiftHours);
-    if (isNaN(hours) || hours <= 0) {
-      toast.error('Bitte geben Sie eine gültige Anzahl von Arbeitsstunden ein');
-      return;
-    }
-
     try {
       const newShift: Omit<WorkingShift, 'id'> = {
         title: newShiftTitle.trim(),
-        workHours: hours,
         employeeId: '',
         date: new Date().toISOString(),
         startTime: '09:00',
@@ -59,7 +51,6 @@ export default function Schichten2Page() {
       await dbService.addWorkingShift(newShift);
       toast.success('Schicht erfolgreich erstellt');
       setNewShiftTitle('');
-      setNewShiftHours('8');
       loadShifts();
     } catch (error) {
       console.error('Error creating shift:', error);
@@ -70,7 +61,6 @@ export default function Schichten2Page() {
   const handleEdit = (shift: WorkingShift) => {
     setEditingShift(shift);
     setNewShiftTitle(shift.title);
-    setNewShiftHours(shift.workHours.toString());
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -83,16 +73,9 @@ export default function Schichten2Page() {
       return;
     }
 
-    const hours = parseFloat(newShiftHours);
-    if (isNaN(hours) || hours <= 0) {
-      toast.error('Bitte geben Sie eine gültige Anzahl von Arbeitsstunden ein');
-      return;
-    }
-
     try {
       const updatedShift: Partial<WorkingShift> = {
         title: newShiftTitle.trim(),
-        workHours: hours,
         updatedAt: new Date().toISOString(),
       };
 
@@ -100,12 +83,16 @@ export default function Schichten2Page() {
       toast.success('Schicht erfolgreich aktualisiert');
       setEditingShift(null);
       setNewShiftTitle('');
-      setNewShiftHours('8');
       loadShifts();
     } catch (error) {
       console.error('Error updating shift:', error);
       toast.error('Fehler beim Aktualisieren der Schicht');
     }
+  };
+
+  const handleCancel = () => {
+    setEditingShift(null);
+    setNewShiftTitle('');
   };
 
   const handleDelete = async (id: string) => {
@@ -119,12 +106,6 @@ export default function Schichten2Page() {
         toast.error('Fehler beim Löschen der Schicht');
       }
     }
-  };
-
-  const handleCancel = () => {
-    setEditingShift(null);
-    setNewShiftTitle('');
-    setNewShiftHours('8');
   };
 
   return (
@@ -152,23 +133,6 @@ export default function Schichten2Page() {
                 focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
                 transition-colors duration-200"
               placeholder="z.B. Frühschicht"
-            />
-          </div>
-
-          <div>
-            <label className="block text-base font-medium text-slate-700 mb-2">
-              Arbeitsstunden
-            </label>
-            <input
-              type="number"
-              value={newShiftHours}
-              onChange={(e) => setNewShiftHours(e.target.value)}
-              min="0.5"
-              step="0.5"
-              className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                transition-colors duration-200"
-              placeholder="z.B. 8"
             />
           </div>
         </div>
@@ -205,9 +169,6 @@ export default function Schichten2Page() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Schicht
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Arbeitsstunden
-                </th>
                 <th scope="col" className="relative px-6 py-3">
                   <span className="sr-only">Aktionen</span>
                 </th>
@@ -218,9 +179,6 @@ export default function Schichten2Page() {
                 <tr key={shift.id} className="hover:bg-slate-50 transition-all duration-200">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                     {shift.title}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {shift.workHours}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button

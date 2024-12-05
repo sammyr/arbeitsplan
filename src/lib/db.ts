@@ -19,7 +19,7 @@ async function readDb() {
   if (dbData) return dbData;
 
   try {
-    const storedData = localStorage.getItem('arbeitsplan_db');
+    const storedData = localStorage.getItem('arbeitsplan3_db');
     if (storedData) {
       dbData = JSON.parse(storedData);
       // Ensure all arrays exist
@@ -49,37 +49,26 @@ async function readDb() {
       dbData = {
         employees: initialEmployees,
         stores: initialStores,
-        shifts: initialShifts,
+        shifts: initialShifts2,
         logs: [],
         assignments: [],
-        workingShifts: [...initialShifts, ...initialShifts2]
+        workingShifts: []
       };
-      // Save the initialized data
-      localStorage.setItem('arbeitsplan_db', JSON.stringify(dbData));
     }
     return dbData;
   } catch (error) {
-    console.error('Error reading from localStorage:', error);
-    // Fallback to example data on error
-    dbData = {
-      employees: initialEmployees,
-      stores: initialStores,
-      shifts: initialShifts,
-      logs: [],
-      assignments: [],
-      workingShifts: [...initialShifts, ...initialShifts2]
-    };
-    return dbData;
+    console.error('Error reading from database:', error);
+    throw error;
   }
 }
 
 async function writeDb(data: typeof dbData) {
-  if (!data) throw new Error('No data to write');
   try {
-    localStorage.setItem('arbeitsplan_db', JSON.stringify(data));
+    if (!data) throw new Error('No data to write');
+    localStorage.setItem('arbeitsplan3_db', JSON.stringify(data));
     dbData = data;
   } catch (error) {
-    console.error('Error writing to localStorage:', error);
+    console.error('Error writing to database:', error);
     throw error;
   }
 }
@@ -404,8 +393,10 @@ export const dbService = {
     }
     const id = crypto.randomUUID();
     const newShift: WorkingShift = {
-      ...shift,
       id,
+      title: shift.title,
+      start: shift.start,
+      end: shift.end,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

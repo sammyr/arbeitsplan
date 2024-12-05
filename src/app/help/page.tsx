@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { HiRocketLaunch, HiClipboardDocument, HiChatBubbleLeftRight, HiBookOpen, HiEnvelope, HiPhone, HiClock } from 'react-icons/hi2';
+import { HiRocketLaunch, HiClipboardDocument, HiChatBubbleLeftRight, HiBookOpen, HiEnvelope, HiPhone, HiScale } from 'react-icons/hi2';
 
 export default function HelpPage() {
   return (
@@ -19,7 +19,7 @@ export default function HelpPage() {
           />
         </div>
         <h1 className="text-4xl font-bold mb-2 text-slate-800">Arbeitsplan Manager</h1>
-        <p className="text-slate-600 mb-4">Version 0.5</p>
+        <p className="text-slate-600 mb-4">Version 0.52</p>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
@@ -28,13 +28,11 @@ export default function HelpPage() {
             <span className="bg-emerald-100 p-2 rounded-lg mr-3">
               <HiRocketLaunch className="w-5 h-5 text-emerald-600" />
             </span>
-            Demnächst
+            Geplant
           </h2>
           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-l-4 border-emerald-400 p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
             <ul className="list-disc pl-5 text-slate-700 space-y-3">
-              <li>PDF Download - Arbeitsplan ausdrucken und als PDF exportieren</li>
-              <li>Logo Upload - Eigenes Firmenlogo hochladen und verwenden</li>
-              <li>Arbeitsplan an alle Mitarbeiter senden</li>
+            <li>Erstellung von Arbeitsschichten durch Spracheingabe</li>
               <li>Erweiterte Benachrichtigungen:
                 <ul className="list-circle pl-5 mt-2 space-y-2">
                   <li>Schichtwechsel Informationen</li>
@@ -50,11 +48,57 @@ export default function HelpPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-6 text-slate-800 flex items-center">
             <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+              <HiRocketLaunch className="w-5 h-5 text-emerald-600" />
+            </span>
+            Demnächst
+          </h2>
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-l-4 border-emerald-400 p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+            <ul className="list-disc pl-5 text-slate-700 space-y-3">
+              
+              <li>PDF Download - Arbeitsplan ausdrucken und als PDF exportieren</li>
+              <li>Registrierung / Login</li>
+              <li>Arbeitsplan an alle Mitarbeiter senden</li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-6 text-slate-800 flex items-center">
+            <span className="bg-emerald-100 p-2 rounded-lg mr-3">
               <HiClipboardDocument className="w-5 h-5 text-emerald-600" />
             </span>
             Changelog
           </h2>
           <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
+              <h3 className="text-lg font-medium text-slate-800">Version 0.52 (Dezember 2024)</h3>
+              <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
+                <li>Excel-Export für Arbeitsstunden mit zwei Tabellenblättern:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Filialarbeitsstunden - Detaillierte Stundenaufstellung pro Filiale</li>
+                    <li>Gesamtstunden - Übersicht der Gesamtstunden pro Mitarbeiter</li>
+                  </ul>
+                </li>
+                <li>Verbesserte Stundenberechnung und Synchronisation zwischen Arbeitsplan und Auswertungen</li>
+                <li>Optimierte Darstellung der Arbeitsstunden in der Auswertungsansicht</li>
+              </ul>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
+              <h3 className="text-lg font-medium text-slate-800">Version 0.51 (November 2024)</h3>
+              <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
+                <li>Neue Auswertungsseite für Arbeitsstunden:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Übersicht der Arbeitsstunden pro Filiale</li>
+                    <li>Gesamtstunden pro Mitarbeiter</li>
+                    <li>Monatsweise Navigation</li>
+                  </ul>
+                </li>
+                <li>Verbessertes Logging-System für Schichtänderungen</li>
+                <li>Optimierte Benutzeroberfläche für mobile Geräte</li>
+              </ul>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
               <h3 className="text-lg font-medium text-slate-800">Version 0.5 (November 2024)</h3>
               <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
@@ -62,14 +106,42 @@ export default function HelpPage() {
                 <li>Verbessertes Bearbeiten von Schichten direkt im Kalender</li>
                 <li>Neue Benutzeroberfläche für Schichtbearbeitung</li>
                 <li>Optimierte Navigation und Menüstruktur</li>
+                <li>Automatische Speicherung von Änderungen</li>
+                <li>Verbesserte Fehlerbehandlung und Benutzer-Feedback</li>
               </ul>
             </div>
+
             <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
               <h3 className="text-lg font-medium text-slate-800">Version 0.4</h3>
               <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
-                <li>Implementierung des Kalender-Drag-and-Drop</li>
-                <li>Verbesserte Mitarbeiterverwaltung</li>
-                <li>Filialspezifische Ansichten</li>
+                <li>Implementierung des Kalender-Drag-and-Drop:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Schichten per Drag & Drop verschieben</li>
+                    <li>Visuelle Rückmeldung beim Verschieben</li>
+                    <li>Automatische Aktualisierung der Ansicht</li>
+                  </ul>
+                </li>
+                <li>Verbesserte Mitarbeiterverwaltung:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Hinzufügen und Bearbeiten von Mitarbeitern</li>
+                    <li>Mitarbeiter-Verfügbarkeit</li>
+                    <li>Mitarbeiter-Qualifikationen</li>
+                  </ul>
+                </li>
+                <li>Filialspezifische Ansichten:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Separate Kalender pro Filiale</li>
+                    <li>Filialspezifische Schichtpläne</li>
+                    <li>Schnelle Filialauswahl</li>
+                  </ul>
+                </li>
+                <li>Schichtverwaltung:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Erstellen und Bearbeiten von Schichtvorlagen</li>
+                    <li>Flexible Schichtzeiten</li>
+                    <li>Schicht-Kategorien</li>
+                  </ul>
+                </li>
               </ul>
             </div>
           </div>
@@ -98,12 +170,6 @@ export default function HelpPage() {
                   <HiPhone className="w-5 h-5 text-emerald-600" />
                 </span>
                 Telefon: +49 (0) 123 456789
-              </li>
-              <li className="flex items-center">
-                <span className="bg-emerald-100 p-2 rounded-lg mr-3">
-                  <HiClock className="w-5 h-5 text-emerald-600" />
-                </span>
-                Geschäftszeiten: Mo-Fr 9:00 - 17:00 Uhr
               </li>
             </ul>
           </div>
@@ -136,7 +202,9 @@ export default function HelpPage() {
 
         <section>
           <h2 className="text-2xl font-semibold mb-6 text-slate-800 flex items-center">
-            <span className="bg-emerald-100 p-2 rounded-lg mr-3">⚖️</span>
+            <span className="bg-emerald-100 p-2 rounded-lg mr-3">
+              <HiScale className="w-5 h-5 text-emerald-600" />
+            </span>
             Rechtliches
           </h2>
           <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">

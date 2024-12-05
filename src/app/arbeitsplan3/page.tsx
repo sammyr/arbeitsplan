@@ -101,6 +101,7 @@ export default function Arbeitsplan3Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<ShiftAssignment | null>(null);
 
   // Speichere das aktuelle Datum bei jeder Änderung
   useEffect(() => {
@@ -200,77 +201,121 @@ export default function Arbeitsplan3Page() {
   };
 
   // Schicht-Funktionen
-  const handleAssignmentSave = async (employeeId: string, shiftId: string) => {
+  const handleAssignmentSave = async (employeeId: string, shiftId: string, workingHours: number) => {
     if (!selectedStore || !selectedDate) {
       toast.error('Bitte wählen Sie eine Filiale und ein Datum aus');
       return;
     }
 
     try {
-      const assignment: Omit<ShiftAssignment, 'id'> = {
-        employeeId,
-        shiftId,
-        storeId: selectedStore.id,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      if (editingAssignment) {
+        // Update existing assignment
+        const updatedAssignment = {
+          ...editingAssignment,
+          employeeId,
+          shiftId,
+          workingHours,
+          updatedAt: new Date().toISOString()
+        };
 
-      const assignmentId = await dbService.addAssignment(assignment);
-      const newAssignment = { ...assignment, id: assignmentId };
-      setAssignments(prev => [...prev, newAssignment]);
-      
-      // Hole Mitarbeiter- und Schichtinformationen für den Log-Eintrag
-      const employee = employees.find(e => e.id === employeeId);
-      const shift = shifts.find(s => s.id === shiftId);
-      
-      // Erstelle einen detaillierten Log-Eintrag
-      await dbService.addLogEntry(
-        'success',
-        `Neue Schicht zugewiesen`,
-        {
-          mitarbeiter: employee?.firstName || 'Unbekannt',
-          schicht: shift?.title || 'Unbekannt',
-          datum: format(selectedDate, 'dd.MM.yyyy'),
-          filiale: selectedStore.name
-        }
-      );
-      
-      toast.success('Schicht erfolgreich zugewiesen');
+        await dbService.updateAssignment(editingAssignment.id, updatedAssignment);
+        setAssignments(prev => prev.map(a => 
+          a.id === editingAssignment.id ? updatedAssignment : a
+        ));
+
+        const employee = employees.find(e => e.id === employeeId);
+        const shift = shifts.find(s => s.id === shiftId);
+
+        await dbService.addLogEntry(
+          'success',
+          `Schicht bearbeitet`,
+          {
+            mitarbeiter: employee?.firstName || 'Unbekannt',
+            schicht: shift?.title || 'Unbekannt',
+            stunden: workingHours,
+            datum: format(new Date(updatedAssignment.date), 'dd.MM.yyyy'),
+            filiale: selectedStore.name
+          }
+        );
+
+        toast.success('Schicht wurde erfolgreich bearbeitet');
+      } else {
+        // Create new assignment
+        const assignment: Omit<ShiftAssignment, 'id'> = {
+          employeeId,
+          shiftId,
+          storeId: selectedStore.id,
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          workingHours,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        const assignmentId = await dbService.addAssignment(assignment);
+        const newAssignment = { ...assignment, id: assignmentId };
+        setAssignments(prev => [...prev, newAssignment]);
+        
+        const employee = employees.find(e => e.id === employeeId);
+        const shift = shifts.find(s => s.id === shiftId);
+        
+        await dbService.addLogEntry(
+          'success',
+          `Neue Schicht zugewiesen`,
+          {
+            mitarbeiter: employee?.firstName || 'Unbekannt',
+            schicht: shift?.title || 'Unbekannt',
+            stunden: workingHours,
+            datum: format(selectedDate, 'dd.MM.yyyy'),
+            filiale: selectedStore.name
+          }
+        );
+        
+        toast.success('Schicht erfolgreich zugewiesen');
+      }
       setIsModalOpen(false);
+      setEditingAssignment(null);
     } catch (error) {
       console.error('Error saving assignment:', error);
-      await dbService.addLogEntry('error', 'Fehler beim Zuweisen der Schicht');
-      toast.error('Fehler beim Speichern der Zuweisung');
+      await dbService.addLogEntry('error', editingAssignment ? 'Fehler beim Bearbeiten der Schicht' : 'Fehler beim Zuweisen der Schicht');
+      toast.error(editingAssignment ? 'Fehler beim Bearbeiten der Schicht' : 'Fehler beim Speichern der Zuweisung');
     }
   };
 
   // Funktion zum Löschen einer Schichtzuweisung
   const handleDeleteAssignment = async (assignmentId: string) => {
+    // Finde die zu löschende Zuweisung
+    const assignment = assignments.find(a => a.id === assignmentId);
+    if (!assignment) return;
+
+    const employee = employees.find(e => e.id === assignment.employeeId);
+    const shift = shifts.find(s => s.id === assignment.shiftId);
+    
+    // Bestätigungsdialog anzeigen
+    const isConfirmed = window.confirm(
+      `Möchten Sie wirklich die Schicht "${shift?.title || 'Unbekannt'}" von ${employee?.firstName || 'Unbekannt'} am ${format(new Date(assignment.date), 'dd.MM.yyyy')} löschen?`
+    );
+    
+    if (!isConfirmed) {
+      return; // Wenn der Benutzer abbricht, nichts weiter tun
+    }
+
     try {
-      // Finde die zu löschende Zuweisung
-      const assignment = assignments.find(a => a.id === assignmentId);
-      if (assignment) {
-        const employee = employees.find(e => e.id === assignment.employeeId);
-        const shift = shifts.find(s => s.id === assignment.shiftId);
-        
-        await dbService.deleteAssignment(assignmentId);
-        setAssignments(prev => prev.filter(a => a.id !== assignmentId));
-        
-        // Erstelle einen Log-Eintrag für die Löschung
-        await dbService.addLogEntry(
-          'info',
-          `Schicht gelöscht`,
-          {
-            mitarbeiter: employee?.firstName || 'Unbekannt',
-            schicht: shift?.title || 'Unbekannt',
-            datum: format(new Date(assignment.date), 'dd.MM.yyyy'),
-            filiale: selectedStore?.name || 'Unbekannt'
-          }
-        );
-        
-        toast.success('Schicht wurde gelöscht');
-      }
+      await dbService.deleteAssignment(assignmentId);
+      setAssignments(prev => prev.filter(a => a.id !== assignmentId));
+      
+      // Erstelle einen Log-Eintrag für die Löschung
+      await dbService.addLogEntry(
+        'info',
+        `Schicht gelöscht`,
+        {
+          mitarbeiter: employee?.firstName || 'Unbekannt',
+          schicht: shift?.title || 'Unbekannt',
+          datum: format(new Date(assignment.date), 'dd.MM.yyyy'),
+          filiale: selectedStore?.name || 'Unbekannt'
+        }
+      );
+      
+      toast.success('Schicht wurde gelöscht');
     } catch (error) {
       console.error('Error deleting assignment:', error);
       await dbService.addLogEntry('error', 'Fehler beim Löschen der Schicht');
@@ -353,6 +398,22 @@ export default function Arbeitsplan3Page() {
       // Nur im Fehlerfall die Daten neu laden
       await loadStoreData(selectedStore, setIsLoading, setEmployees, setShifts, setAssignments);
     }
+  };
+
+  // Berechne die Gesamtstunden pro Mitarbeiter für den aktuellen Monat
+  const calculateMonthlyHours = () => {
+    const monthlyHours: { [key: string]: number } = {};
+    
+    assignments.forEach(assignment => {
+      const assignmentDate = new Date(assignment.date);
+      // Prüfe ob die Zuweisung im aktuellen Monat liegt
+      if (isSameMonth(assignmentDate, currentDate)) {
+        const employeeId = assignment.employeeId;
+        monthlyHours[employeeId] = (monthlyHours[employeeId] || 0) + (assignment.workingHours || 0);
+      }
+    });
+
+    return monthlyHours;
   };
 
   return (
@@ -498,24 +559,45 @@ export default function Arbeitsplan3Page() {
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
-                                    className="group relative p-1.5 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 text-xs rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm"
+                                    className="group relative"
                                   >
-                                    <div className="flex items-center justify-between">
-                                      <span>
-                                       <strong className="text-slate-900">{employee?.firstName}</strong>   {shift?.title}
-                                      </span>
+                                    <div className="absolute -top-2 right-0 flex opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingAssignment(assignment);
+                                          setSelectedDate(new Date(assignment.date));
+                                          setIsModalOpen(true);
+                                        }}
+                                        className="ml-1 p-0.5 text-slate-500 hover:text-slate-700 rounded transition-colors bg-white shadow-sm"
+                                        title="Schicht bearbeiten"
+                                      >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                      </button>
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleDeleteAssignment(assignment.id);
                                         }}
-                                        className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 text-slate-500 hover:text-slate-700 rounded transition-opacity"
+                                        className="ml-1 p-0.5 text-slate-500 hover:text-slate-700 rounded transition-colors bg-white shadow-sm"
                                         title="Schicht löschen"
                                       >
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         </svg>
                                       </button>
+                                    </div>
+                                    <div className="p-4 h-20 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 text-xs rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm">
+                                      <div className="h-full flex flex-col items-center justify-center">
+                                        <span className="text-center">
+                                          <strong className="text-slate-900">{employee?.firstName}</strong> {shift?.title}
+                                        </span>
+                                        <span className="text-center text-slate-600 mt-1">
+                                          {assignment.workingHours} Stunden
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                 )}
@@ -531,6 +613,53 @@ export default function Arbeitsplan3Page() {
             </DragDropContext>
           </div>
         </div>
+
+        {/* Monatsübersicht der Arbeitsstunden */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">Arbeitsstunden Übersicht {format(currentDate, 'MMMM yyyy', { locale: de })}</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mitarbeiter
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Gesamtstunden
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {employees
+                  .map(employee => ({
+                    ...employee,
+                    totalHours: calculateMonthlyHours()[employee.id] || 0
+                  }))
+                  .sort((a, b) => b.totalHours - a.totalHours) // Sortiere nach Stunden absteigend
+                  .map(employee => (
+                    <tr key={employee.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.firstName} {employee.lastName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {employee.totalHours.toFixed(1)} Stunden
+                      </td>
+                    </tr>
+                  ))}
+                <tr className="bg-gray-50 font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    Gesamt
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {employees
+                      .reduce((total, employee) => total + (calculateMonthlyHours()[employee.id] || 0), 0)
+                      .toFixed(1)} Stunden
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Loading Spinner */}
@@ -544,11 +673,17 @@ export default function Arbeitsplan3Page() {
       {isModalOpen && selectedDate && (
         <ShiftAssignmentModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingAssignment(null);
+          }}
           onSave={handleAssignmentSave}
           employees={employees}
           shifts={shifts}
           date={selectedDate}
+          initialEmployeeId={editingAssignment?.employeeId}
+          initialShiftId={editingAssignment?.shiftId}
+          initialWorkingHours={editingAssignment?.workingHours || 8}
         />
       )}
     </div>

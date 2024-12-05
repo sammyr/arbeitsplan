@@ -28,6 +28,17 @@ export interface WorkplanEntry {
   shiftId: string;
 }
 
+export interface ShiftAssignment {
+  id: string;
+  employeeId: string;
+  shiftId: string;
+  storeId: string;
+  date: string;
+  workingHours: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;

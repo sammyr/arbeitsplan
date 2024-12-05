@@ -100,7 +100,6 @@ export const initialShifts: WorkingShift[] = [
   {
     id: '1',
     title: 'Frühschicht',
-    workHours: 8,
     startTime: '06:00',
     endTime: '14:00',
     employeeId: '',
@@ -113,7 +112,6 @@ export const initialShifts: WorkingShift[] = [
   {
     id: '2',
     title: 'Spätschicht',
-    workHours: 8,
     startTime: '14:00',
     endTime: '22:00',
     employeeId: '',

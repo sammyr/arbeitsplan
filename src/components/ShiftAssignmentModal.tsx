@@ -1,16 +1,19 @@
 import { Employee } from '@/types/employee';
 import { WorkingShift } from '@/types';
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 
 interface ShiftAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (employeeId: string, shiftId: string) => void;
+  onSave: (employeeId: string, shiftId: string, workingHours: number) => void;
   employees: Employee[];
   shifts: WorkingShift[];
   date: Date;
+  initialEmployeeId?: string;
+  initialShiftId?: string;
+  initialWorkingHours?: number;
 }
 
 const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
@@ -20,28 +23,34 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   employees,
   shifts,
   date,
+  initialEmployeeId,
+  initialShiftId,
+  initialWorkingHours = 8
 }) => {
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
-  const [selectedShift, setSelectedShift] = useState<string>('');
+  const [selectedEmployee, setSelectedEmployee] = useState(initialEmployeeId || '');
+  const [selectedShift, setSelectedShift] = useState(initialShiftId || '');
+  const [workingHours, setWorkingHours] = useState(initialWorkingHours);
   const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedEmployee(initialEmployeeId || '');
+      setSelectedShift(initialShiftId || '');
+      setWorkingHours(initialWorkingHours);
+    }
+  }, [isOpen, initialEmployeeId, initialShiftId, initialWorkingHours]);
 
   const handleSave = () => {
     setError('');
-    
-    if (!selectedEmployee || !selectedShift) {
-      setError('Bitte wählen Sie sowohl einen Mitarbeiter als auch eine Schicht aus.');
+    if (!selectedEmployee) {
+      setError('Bitte wählen Sie einen Mitarbeiter aus');
       return;
     }
-
-    try {
-      onSave(selectedEmployee, selectedShift);
-      setSelectedEmployee('');
-      setSelectedShift('');
-      onClose();
-    } catch (error) {
-      setError('Fehler beim Speichern der Schichtzuweisung');
-      console.error('Error in handleSave:', error);
+    if (!selectedShift) {
+      setError('Bitte wählen Sie eine Schicht aus');
+      return;
     }
+    onSave(selectedEmployee, selectedShift, workingHours);
   };
 
   return (
@@ -129,6 +138,35 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    {/* Arbeitsstunden */}
+                    <div>
+                      <label className="block text-base font-medium text-slate-700 mb-2">
+                        Arbeitsstunden
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setWorkingHours(Math.max(0, workingHours - 0.5))}
+                          className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          value={workingHours}
+                          onChange={(e) => setWorkingHours(Math.max(0, parseFloat(e.target.value) || 0))}
+                          step="0.5"
+                          min="0"
+                          className="block w-20 rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                          onClick={() => setWorkingHours(workingHours + 0.5)}
+                          className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
 
                     {error && (
