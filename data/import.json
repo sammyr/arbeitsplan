@@ -1,0 +1,205 @@
+{
+  "arbeitsplan_db": {
+    "employees": [
+      {
+        "id": "1",
+        "firstName": "Silvia",
+        "lastName": "",
+        "email": "silvia@example.com",
+        "mobilePhone": "",
+        "role": "Verkäufer",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      },
+      {
+        "id": "2",
+        "firstName": "Maxi",
+        "lastName": "",
+        "email": "maxi@example.com",
+        "mobilePhone": "",
+        "role": "Verkäufer",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      },
+      {
+        "id": "3",
+        "firstName": "Cindy",
+        "lastName": "",
+        "email": "cindy@example.com",
+        "mobilePhone": "",
+        "role": "Verkäufer",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      },
+      {
+        "id": "4",
+        "firstName": "Peter",
+        "lastName": "",
+        "email": "peter@example.com",
+        "mobilePhone": "",
+        "role": "Verkäufer",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      },
+      {
+        "id": "5",
+        "firstName": "Jenny",
+        "lastName": "",
+        "email": "jenny@example.com",
+        "mobilePhone": "",
+        "role": "Verkäufer",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      },
+      {
+        "id": "6",
+        "firstName": "Tobi",
+        "lastName": "",
+        "email": "tobi@example.com",
+        "mobilePhone": "",
+        "role": "Verkäufer",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      },
+      {
+        "id": "7",
+        "firstName": "Diana",
+        "lastName": "",
+        "email": "diana@example.com",
+        "mobilePhone": "",
+        "role": "Verkäufer",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      }
+    ],
+    "stores": [
+      {
+        "id": "1",
+        "name": "Erkner",
+        "address": "Erkner Straße 1",
+        "phone": "",
+        "email": "",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      },
+      {
+        "id": "2",
+        "name": "Goßen",
+        "address": "Goßen Straße 1",
+        "phone": "",
+        "email": "",
+        "updatedAt": "2024-12-09T21:54:41.539Z"
+      }
+    ],
+    "workingShifts": [
+      {
+        "id": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "title": "Frühschicht",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "employeeId": "",
+        "shiftId": "",
+        "storeId": "",
+        "workHours": 8,
+        "date": "2024-12-09T22:17:28.577Z",
+        "updatedAt": "2024-12-09T22:17:28.577Z"
+      },
+      {
+        "id": "6c5d6be5-e26b-43e6-acc3-52cafaa7bfdd",
+        "title": "Spätschicht",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "employeeId": "",
+        "shiftId": "",
+        "storeId": "",
+        "workHours": 8,
+        "date": "2024-12-09T22:17:37.835Z",
+        "updatedAt": "2024-12-09T22:17:37.835Z"
+      }
+    ],
+    "assignments": [
+      {
+        "id": "00e0972f-d2e0-4447-a36f-f0ac1789606a",
+        "employeeId": "1",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "1",
+        "date": "2024-12-03",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:17:45.313Z"
+      },
+      {
+        "id": "8d4816f7-3c2a-490c-8aaf-f514bff30837",
+        "employeeId": "3",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "1",
+        "date": "2024-12-20",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:17:49.368Z"
+      },
+      {
+        "id": "6174002e-bbd8-4bda-b2db-ffef9f6b5174",
+        "employeeId": "5",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "1",
+        "date": "2024-12-25",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:17:57.473Z"
+      },
+      {
+        "id": "820141a0-cda0-4fdf-bbc0-3408fc97e77d",
+        "employeeId": "4",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "1",
+        "date": "2024-12-14",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:18:02.289Z"
+      },
+      {
+        "id": "5287a7d8-3fab-4e3a-a3b6-bdd3e8429b5e",
+        "employeeId": "7",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "1",
+        "date": "2024-12-16",
+        "workHours": 9,
+        "updatedAt": "2024-12-09T22:18:17.056Z"
+      },
+      {
+        "id": "b13608ad-d7f9-48b7-8040-73fff30a11fc",
+        "employeeId": "3",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "2",
+        "date": "2024-12-04",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:18:53.393Z"
+      },
+      {
+        "id": "bcb577cd-ed34-4954-86e0-5aa216ec4774",
+        "employeeId": "2",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "2",
+        "date": "2024-12-20",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:19:02.441Z"
+      },
+      {
+        "id": "cc42674d-ca77-40a0-a6f4-6ee1b931537a",
+        "employeeId": "5",
+        "shiftId": "6c5d6be5-e26b-43e6-acc3-52cafaa7bfdd",
+        "storeId": "2",
+        "date": "2024-12-17",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:19:12.818Z"
+      },
+      {
+        "id": "fba706fd-c456-4a8e-a6dc-daecfedcabf6",
+        "employeeId": "3",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "2",
+        "date": "2024-12-08",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:19:19.225Z"
+      },
+      {
+        "id": "721488d8-b505-47b8-b993-e783de090947",
+        "employeeId": "2",
+        "shiftId": "18939dc4-2a47-4aa8-9303-5cf176bc0d45",
+        "storeId": "2",
+        "date": "2024-12-25",
+        "workHours": 8,
+        "updatedAt": "2024-12-09T22:19:25.689Z"
+      }
+    ]
+  }
+}

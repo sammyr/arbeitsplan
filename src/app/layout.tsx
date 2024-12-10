@@ -1,34 +1,43 @@
-import './globals.css';
-import { Inter } from 'next/font/google';
-import Sidebar from '@/components/Sidebar';
-import { StoreProvider } from '@/contexts/StoreContext';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { StoreProvider } from '@/contexts/StoreContext'
+import { ShiftProvider } from '@/contexts/ShiftContext'
+import { Toaster } from 'react-hot-toast'
+import MainLayout from '@/components/MainLayout'
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
-  title: 'Arbeitsplan Manager',
-  description: 'Verwalten Sie Ihren Arbeitsplan effizient',
-};
+export const metadata: Metadata = {
+  title: 'Arbeitsplan',
+  description: 'Arbeitsplan Management System',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="de" className="h-full bg-gray-100">
-      <body className={`${inter.className} h-full`}>
-        <StoreProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1 lg:pl-72 pt-16 lg:pt-0">
-              <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <html lang="de">
+      <body className={inter.className}>
+        <AuthProvider>
+          <StoreProvider>
+            <ShiftProvider>
+              <MainLayout>
                 {children}
-              </div>
-            </main>
-          </div>
-        </StoreProvider>
+              </MainLayout>
+            </ShiftProvider>
+          </StoreProvider>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
-  );
+  )
 }

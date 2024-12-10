@@ -1,166 +1,158 @@
-import { Employee } from '@/types/employee';
-import { Store } from '@/types/store';
-import { Shift } from '@/types/shift';
-import { LogEntry, LogType } from '@/types/log';
-import { ShiftAssignment } from '@/types/shift-assignment';
-import { WorkingShift } from '@/types/working-shift';
-import { initialStores, initialEmployees, initialShifts, initialShifts2 } from './initialData';
+import { collection, getDocs, addDoc, query, where, deleteDoc, doc, updateDoc, getDoc, CollectionReference, DocumentData, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
+import type { Store } from '@/types/store';
+import type { Employee } from '@/types/employee';
+import type { Shift } from '@/types/shift';
+import type { ShiftAssignment } from '@/types/shift-assignment';
+import type { WorkingShift } from '@/types/working-shift';
 
-let dbData: {
-  employees: Employee[];
-  stores: Store[];
-  shifts: Shift[];
-  logs: LogEntry[];
-  assignments: ShiftAssignment[];
-  workingShifts: WorkingShift[];
-} | null = null;
-
-async function readDb() {
-  if (dbData) return dbData;
-
-  try {
-    const storedData = localStorage.getItem('arbeitsplan3_db');
-    if (storedData) {
-      dbData = JSON.parse(storedData);
-      // Ensure all arrays exist
-      if (!dbData) {
-        throw new Error('Invalid database data');
-      }
-      if (!dbData.workingShifts) {
-        dbData.workingShifts = [];
-      }
-      if (!dbData.shifts) {
-        dbData.shifts = [];
-      }
-      if (!dbData.employees) {
-        dbData.employees = [];
-      }
-      if (!dbData.stores) {
-        dbData.stores = [];
-      }
-      if (!dbData.logs) {
-        dbData.logs = [];
-      }
-      if (!dbData.assignments) {
-        dbData.assignments = [];
-      }
-    } else {
-      // Initialize with example data
-      dbData = {
-        employees: initialEmployees,
-        stores: initialStores,
-        shifts: initialShifts2,
-        logs: [],
-        assignments: [],
-        workingShifts: []
-      };
-    }
-    return dbData;
-  } catch (error) {
-    console.error('Error reading from database:', error);
-    throw error;
-  }
-}
-
-async function writeDb(data: typeof dbData) {
-  try {
-    if (!data) throw new Error('No data to write');
-    localStorage.setItem('arbeitsplan3_db', JSON.stringify(data));
-    dbData = data;
-  } catch (error) {
-    console.error('Error writing to database:', error);
-    throw error;
-  }
-}
-
-export const dbService = {
+const dbService = {
   // Reset database
   async resetDatabase(): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    dbData = {
-      employees: initialEmployees,
-      stores: initialStores,
-      shifts: initialShifts,
-      logs: [],
-      assignments: [],
-      workingShifts: [...initialShifts, ...initialShifts2]
-    };
-    await writeDb(dbData);
-    await dbService.addLogEntry('success', 'Datenbank wurde erfolgreich zurückgesetzt');
+    try {
+      // Delete all documents from each collection
+      const collections = ['mitarbeiter', 'stores', 'shifts', 'logs', 'assignments', 'workingShifts'];
+      for (const collectionName of collections) {
+        const querySnapshot = await getDocs(collection(db, collectionName));
+        const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+      }
+
+      await this.addLogEntry('success', 'Datenbank wurde erfolgreich zurückgesetzt');
+    } catch (error) {
+      console.error('Error resetting database:', error);
+      throw error;
+    }
   },
 
   // Store operations
-  async getStores(): Promise<Store[]> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    return db.stores;
+  async getStores(organizationId?: string): Promise<Store[]> {
+    if (!organizationId) return [];
+    
+    try {
+      console.log('Getting stores for organization:', organizationId);
+      const storesRef = collection(db, 'stores');
+      const q = query(
+        storesRef,
+        where('organizationId', '==', organizationId)
+      );
+      
+      console.log('Executing stores query...');
+      const querySnapshot = await getDocs(q);
+      console.log('Raw query result size:', querySnapshot.size);
+      
+      const stores = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || '',
+          address: data.address || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          organizationId: data.organizationId,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as Store;
+      });
+      
+      console.log('Processed stores:', stores);
+      return stores;
+    } catch (error) {
+      console.error('Error getting stores:', error);
+      throw error;
+    }
   },
 
   async getStore(id: string): Promise<Store | undefined> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    return db.stores.find(store => store.id === id);
+    try {
+      const docRef = doc(db, 'stores', id);
+      const docSnapshot = await getDoc(docRef);
+      if (docSnapshot.exists()) {
+        return { id: docSnapshot.id, ...docSnapshot.data() } as Store;
+      }
+      return undefined;
+    } catch (error) {
+      console.error('Error getting store:', error);
+      throw error;
+    }
   },
 
   async addStore(store: Omit<Store, 'id'>): Promise<string> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    const id = crypto.randomUUID();
-    const newStore: Store = {
-      ...store,
-      id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    db.stores.push(newStore);
-    await writeDb(db);
-    await dbService.addLogEntry('success', `Store ${newStore.id} wurde erfolgreich erstellt`);
-    return id;
+    try {
+      const docRef = await addDoc(collection(db, 'stores'), {
+        ...store,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding store:', error);
+      throw error;
+    }
   },
 
   async updateStore(id: string, storeData: Partial<Store>): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    const index = db.stores.findIndex(s => s.id === id);
-    if (index === -1) throw new Error('Store not found');
-    db.stores[index] = {
-      ...db.stores[index],
-      ...storeData,
-      updatedAt: new Date().toISOString()
-    };
-    await writeDb(db);
-    await dbService.addLogEntry('info', `Store ${id} wurde aktualisiert: ${JSON.stringify(storeData)}`);
+    try {
+      const docRef = doc(db, 'stores', id);
+      await updateDoc(docRef, {
+        ...storeData,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating store:', error);
+      throw error;
+    }
   },
 
   async deleteStore(id: string): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    const index = db.stores.findIndex(s => s.id === id);
-    if (index === -1) throw new Error('Store not found');
-    db.stores.splice(index, 1);
-    await writeDb(db);
-    await dbService.addLogEntry('success', `Store ${id} wurde erfolgreich gelöscht`);
-  },
-
-  async saveStore(store: Store): Promise<void> {
     try {
-      const db = await readDb();
-      if (!db) throw new Error('Database not initialized');
-      db.stores = db.stores || [];
+      console.log('Starting store deletion process for store:', id);
       
-      // Wenn die Store-ID bereits existiert, aktualisiere den Store
-      const index = db.stores.findIndex(s => s.id === store.id);
-      if (index !== -1) {
-        db.stores[index] = store;
-      } else {
-        // Füge einen neuen Store hinzu
-        db.stores.push(store);
-      }
+      // First, get all assignments for this store
+      const assignmentsQuery = query(
+        collection(db, 'assignments'),
+        where('storeId', '==', id)
+      );
       
-      await writeDb(db);
+      console.log('Fetching assignments for store');
+      const assignmentsSnapshot = await getDocs(assignmentsQuery);
+      console.log('Found assignments:', assignmentsSnapshot.size);
+
+      // Delete all assignments
+      console.log('Deleting assignments...');
+      const deleteAssignments = assignmentsSnapshot.docs.map(doc => {
+        console.log('Deleting assignment:', doc.id);
+        return deleteDoc(doc.ref);
+      });
+      await Promise.all(deleteAssignments);
+      console.log('All assignments deleted');
+
+      // Get all shifts for this store
+      const shiftsQuery = query(
+        collection(db, 'shifts'),
+        where('storeId', '==', id)
+      );
+      
+      console.log('Fetching shifts for store');
+      const shiftsSnapshot = await getDocs(shiftsQuery);
+      console.log('Found shifts:', shiftsSnapshot.size);
+
+      // Delete all shifts
+      console.log('Deleting shifts...');
+      const deleteShifts = shiftsSnapshot.docs.map(doc => {
+        console.log('Deleting shift:', doc.id);
+        return deleteDoc(doc.ref);
+      });
+      await Promise.all(deleteShifts);
+      console.log('All shifts deleted');
+
+      // Finally delete the store itself
+      console.log('Deleting store document');
+      await deleteDoc(doc(db, 'stores', id));
+      console.log('Store document deleted');
+      
     } catch (error) {
-      console.error('Error saving store:', error);
+      console.error('Error deleting store:', error);
       throw error;
     }
   },
@@ -168,385 +160,643 @@ export const dbService = {
   // Employee operations
   async getEmployees(): Promise<Employee[]> {
     try {
-      const db = await readDb();
-      console.log('Raw employees from DB:', db.employees);
-      return db.employees || [];
+      const employeesRef = collection(db, 'mitarbeiter') as CollectionReference<DocumentData>;
+      const querySnapshot = await getDocs(employeesRef);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee));
     } catch (error) {
       console.error('Error getting employees:', error);
-      return [];
+      throw error;
     }
   },
 
   async getEmployee(id: string): Promise<Employee | undefined> {
-    const db = await readDb();
-    return db.employees.find(e => e.id === id);
+    try {
+      const docRef = doc(db, 'mitarbeiter', id);
+      const docSnapshot = await getDoc(docRef);
+      if (docSnapshot.exists()) {
+        return { id: docSnapshot.id, ...docSnapshot.data() } as Employee;
+      }
+      return undefined;
+    } catch (error) {
+      console.error('Error getting employee:', error);
+      throw error;
+    }
   },
 
-  async addEmployee(employee: Omit<Employee, 'id'>): Promise<string> {
-    const db = await readDb();
-    const id = crypto.randomUUID();
-    
-    const newEmployee: Employee = {
-      id,
-      ...employee,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+  async addEmployee(employee: Omit<Employee, 'id'>): Promise<Employee> {
+    try {
+      console.log('Adding employee:', employee);
+      
+      if (!employee.organizationId) {
+        throw new Error('organizationId is required when adding an employee');
+      }
 
-    db.employees.push(newEmployee);
-    await writeDb(db);
-    await dbService.addLogEntry('success', `Mitarbeiter ${newEmployee.id} wurde erfolgreich erstellt`);
-    return id;
+      // Ensure all required fields are present
+      const employeeData = {
+        firstName: employee.firstName || '',
+        lastName: employee.lastName || '',
+        email: employee.email || '',
+        mobilePhone: employee.mobilePhone || '',
+        role: employee.role || 'employee',
+        organizationId: employee.organizationId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const docRef = await addDoc(collection(db, 'mitarbeiter'), employeeData);
+      console.log('Added employee with ID:', docRef.id);
+      
+      return { 
+        id: docRef.id,
+        ...employeeData
+      };
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      throw error;
+    }
   },
 
   async updateEmployee(id: string, employeeData: Partial<Employee>): Promise<void> {
-    const db = await readDb();
-    const index = db.employees.findIndex(e => e.id === id);
-    
-    if (index === -1) {
-      throw new Error('Employee not found');
+    try {
+      const docRef = doc(db, 'mitarbeiter', id);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        throw new Error(`Employee with ID ${id} does not exist`);
+      }
+
+      await updateDoc(docRef, {
+        ...employeeData,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      throw error;
     }
-
-    db.employees[index] = {
-      ...db.employees[index],
-      ...employeeData,
-      updatedAt: new Date().toISOString()
-    };
-
-    await writeDb(db);
-    await dbService.addLogEntry('info', `Mitarbeiter ${id} wurde aktualisiert: ${JSON.stringify(employeeData)}`);
   },
 
   async deleteEmployee(id: string): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-
-    const index = db.employees.findIndex(e => e.id === id);
-    if (index === -1) throw new Error('Employee not found');
-
-    db.employees.splice(index, 1);
-    await writeDb(db);
-    await dbService.addLogEntry('success', `Mitarbeiter ${id} wurde erfolgreich gelöscht`);
+    try {
+      await deleteDoc(doc(db, 'mitarbeiter', id));
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      throw error;
+    }
   },
 
-  async deleteEmployeeWithAssignments(id: string): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
+  async deleteEmployeeWithAssignments(employeeId: string): Promise<void> {
+    try {
+      console.log('Starting deletion process for employee:', employeeId);
+      
+      // First, get all assignments for this employee
+      const assignmentsQuery = query(
+        collection(db, 'assignments'),
+        where('employeeId', '==', employeeId)
+      );
+      
+      console.log('Fetching assignments for employee');
+      const assignmentsSnapshot = await getDocs(assignmentsQuery);
+      console.log('Found assignments:', assignmentsSnapshot.size);
 
-    const index = db.employees.findIndex(e => e.id === id);
-    if (index === -1) throw new Error('Employee not found');
+      // Delete all assignments
+      console.log('Deleting assignments...');
+      const deleteAssignments = assignmentsSnapshot.docs.map(doc => {
+        console.log('Deleting assignment:', doc.id);
+        return deleteDoc(doc.ref);
+      });
+      await Promise.all(deleteAssignments);
+      console.log('All assignments deleted');
 
-    // Lösche alle Schichtzuweisungen des Mitarbeiters
-    db.assignments = db.assignments.filter(assignment => assignment.employeeId !== id);
+      // Then delete the employee
+      console.log('Deleting employee document');
+      await deleteDoc(doc(db, 'mitarbeiter', employeeId));
+      console.log('Employee document deleted');
+      
+    } catch (error) {
+      console.error('Detailed error in deleteEmployeeWithAssignments:', error);
+      throw error;
+    }
+  },
 
-    // Lösche den Mitarbeiter
-    db.employees.splice(index, 1);
-
-    await writeDb(db);
-    await dbService.addLogEntry('warning', `Mitarbeiter ${id} wurde mit allen Schichtzuweisungen gelöscht`);
+  async getEmployeesByOrganization(organizationId: string | undefined): Promise<Employee[]> {
+    if (!organizationId) return [];
+    
+    try {
+      console.log('Getting employees for organization:', organizationId);
+      const employeesRef = collection(db, 'mitarbeiter');
+      
+      // Create a query that only returns employees with the matching organizationId
+      const q = query(
+        employeesRef,
+        where('organizationId', '==', organizationId)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const employees = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          email: data.email || '',
+          mobilePhone: data.mobilePhone || '',
+          role: data.role || '',
+          organizationId: data.organizationId,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as Employee;
+      });
+      
+      console.log(`Found ${employees.length} employees for organization ${organizationId}`);
+      return employees;
+    } catch (error) {
+      console.error('Error getting employees by organization:', error);
+      throw error;
+    }
   },
 
   // Log operations
-  async getLogEntries(): Promise<LogEntry[]> {
-    const db = await readDb();
-    if (!db?.logs) return [];
-    return db.logs;
+  async getLogEntries(): Promise<any[]> {
+    try {
+      const logsRef = collection(db, 'logs');
+      const querySnapshot = await getDocs(logsRef);
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+        };
+      });
+    } catch (error) {
+      console.error('Error getting log entries:', error);
+      throw error;
+    }
   },
 
   async clearLogs(): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    db.logs = [];
-    await writeDb(db);
-    await dbService.addLogEntry('success', 'Logbuch wurde erfolgreich gelöscht');
+    try {
+      const querySnapshot = await getDocs(collection(db, 'logs'));
+      const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error('Error clearing logs:', error);
+      throw error;
+    }
   },
 
-  async addLogEntry(type: LogType, message: string, details?: any): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-
-    // Ensure logs array exists
-    if (!Array.isArray(db.logs)) {
-      db.logs = [];
+  async addLogEntry(type: string, message: string, details?: any): Promise<void> {
+    try {
+      await addDoc(collection(db, 'logs'), {
+        type,
+        message,
+        details,
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error adding log entry:', error);
+      throw error;
     }
-
-    // Validate log type
-    const validTypes = ['info', 'success', 'warning', 'error'] as const;
-    const validType = validTypes.includes(type as any) ? type : 'info';
-
-    // Format details if they exist
-    let formattedDetails: string | undefined;
-    if (details !== undefined) {
-      formattedDetails = typeof details === 'string' 
-        ? details 
-        : JSON.stringify(details, null, 2);
-    }
-
-    const newLog: LogEntry = {
-      id: crypto.randomUUID(),
-      type: validType,
-      message: message || 'Keine Nachricht',
-      details: formattedDetails,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Add to beginning of array (newest first)
-    db.logs.unshift(newLog);
-
-    // Keep only the last 1000 entries
-    if (db.logs.length > 1000) {
-      db.logs = db.logs.slice(0, 1000);
-    }
-
-    await writeDb(db);
   },
 
   // Shift operations
   async getShifts(storeId?: string): Promise<Shift[]> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-
-    if (storeId) {
-      return db.shifts.filter(shift => shift.storeId === storeId);
+    try {
+      const shiftsRef = collection(db, 'shifts') as CollectionReference<DocumentData>;
+      const q = storeId
+        ? query(shiftsRef, where('storeId', '==', storeId))
+        : shiftsRef;
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Shift));
+    } catch (error) {
+      console.error('Error getting shifts:', error);
+      throw error;
     }
-    return db.shifts;
   },
 
   async getShift(id: string): Promise<Shift | undefined> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    return db.shifts.find(shift => shift.id === id);
+    try {
+      const docRef = doc(db, 'shifts', id);
+      const docSnapshot = await getDoc(docRef);
+      if (docSnapshot.exists()) {
+        return { id: docSnapshot.id, ...docSnapshot.data() } as Shift;
+      }
+      return undefined;
+    } catch (error) {
+      console.error('Error getting shift:', error);
+      throw error;
+    }
   },
 
   async addShift(shift: { title: string; startTime: string; endTime: string }): Promise<WorkingShift> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-
-    const id = crypto.randomUUID();
-    const newShift: WorkingShift = {
-      id,
-      title: shift.title,
-      startTime: shift.startTime,
-      endTime: shift.endTime,
-      employeeId: '',
-      shiftId: '',
-      storeId: '',
-      workHours: 8,
-      date: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    db.shifts.push(newShift);
-    await writeDb(db);
-    return newShift;
+    try {
+      const docRef = await addDoc(collection(db, 'shifts'), {
+        ...shift,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return { id: docRef.id, ...shift } as WorkingShift;
+    } catch (error) {
+      console.error('Error adding shift:', error);
+      throw error;
+    }
   },
 
   async updateShift(id: string, shiftData: Partial<Shift>): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-
-    const shiftIndex = db.shifts.findIndex(shift => shift.id === id);
-    if (shiftIndex === -1) throw new Error('Shift not found');
-
-    // Erstelle eine neue Kopie der Schicht
-    const updatedShift = {
-      ...db.shifts[shiftIndex],
-      ...shiftData,
-      updatedAt: new Date().toISOString(),
-      // Stelle sicher, dass die ID nicht überschrieben wird
-      id: db.shifts[shiftIndex].id
-    };
-
-    // Ersetze die alte Schicht mit der aktualisierten Version
-    db.shifts[shiftIndex] = updatedShift;
-
-    // Speichere die Änderungen in der Datenbank
-    await writeDb(db);
-
-    // Füge einen Log-Eintrag hinzu
-    await this.addLogEntry('info', `Schicht ${id} wurde aktualisiert: ${JSON.stringify(shiftData)}`);
+    try {
+      const docRef = doc(db, 'shifts', id);
+      await updateDoc(docRef, {
+        ...shiftData,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating shift:', error);
+      throw error;
+    }
   },
 
   async deleteShift(id: string): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-
-    const shiftIndex = db.shifts.findIndex(shift => shift.id === id);
-    if (shiftIndex === -1) throw new Error('Shift not found');
-
-    db.shifts.splice(shiftIndex, 1);
-    await writeDb(db);
-    await this.addLogEntry('success', `Schicht ${id} wurde erfolgreich gelöscht`);
+    try {
+      await deleteDoc(doc(db, 'shifts', id));
+    } catch (error) {
+      console.error('Error deleting shift:', error);
+      throw error;
+    }
   },
 
-  async getShiftsByStore(storeId: string): Promise<Shift[]> {
-    const db = await readDb();
-    return db.shifts
-      .filter(shift => shift.storeId.toString() === storeId.toString())
-      .map(shift => ({
-        ...shift,
-        id: shift.id.toString(),
-        employeeId: shift.employeeId.toString(),
-        storeId: shift.storeId.toString(),
-        shiftId: shift.shiftId.toString()
-      }));
+  async getShiftsByOrganization(organizationId: string | undefined): Promise<Shift[]> {
+    if (!organizationId) return [];
+    
+    try {
+      const shiftsRef = collection(db, 'shifts') as CollectionReference<DocumentData>;
+      const q = query(shiftsRef, where('organizationId', '==', organizationId));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Shift));
+    } catch (error) {
+      console.error('Error getting shifts by organization:', error);
+      throw error;
+    }
+  },
+
+  // Working Shifts operations
+  async getWorkingShifts(): Promise<WorkingShift[]> {
+    try {
+      const workingShiftsRef = collection(db, 'workingShifts') as CollectionReference<DocumentData>;
+      const querySnapshot = await getDocs(workingShiftsRef);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkingShift));
+    } catch (error) {
+      console.error('Error getting working shifts:', error);
+      throw error;
+    }
   },
 
   async addWorkingShift(shift: Omit<WorkingShift, 'id'>): Promise<string> {
-    const db = await readDb();
-    if (!db.workingShifts) {
-      db.workingShifts = [];
+    try {
+      const docRef = await addDoc(collection(db, 'workingShifts'), {
+        ...shift,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding working shift:', error);
+      throw error;
     }
-    const id = crypto.randomUUID();
-    const newShift: WorkingShift = {
-      id,
-      title: shift.title,
-      startTime: shift.startTime,
-      endTime: shift.endTime,
-      employeeId: '',
-      shiftId: '',
-      storeId: '',
-      workHours: 8,
-      date: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    db.workingShifts.push(newShift);
-    await writeDb(db);
-    await dbService.addLogEntry('success', `Neue Arbeitszeit "${shift.title}" wurde erstellt`);
-    return id;
   },
 
   async updateWorkingShift(id: string, shiftData: Partial<WorkingShift>): Promise<void> {
-    const db = await readDb();
-    const index = db.workingShifts.findIndex(s => s.id === id);
-    if (index === -1) throw new Error('Arbeitszeit nicht gefunden');
-    
-    const updatedShift = {
-      ...db.workingShifts[index],
-      ...shiftData,
-      updatedAt: new Date().toISOString()
-    };
-    db.workingShifts[index] = updatedShift;
-    await writeDb(db);
-    await dbService.addLogEntry('info', `Arbeitszeit "${updatedShift.title}" wurde aktualisiert`);
+    try {
+      const docRef = doc(db, 'workingShifts', id);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        throw new Error(`Working shift with ID ${id} does not exist`);
+      }
+
+      await updateDoc(docRef, {
+        ...shiftData,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating working shift:', error);
+      throw error;
+    }
   },
 
   async deleteWorkingShift(id: string): Promise<void> {
-    const db = await readDb();
-    const shift = db.workingShifts.find(s => s.id === id);
-    if (!shift) throw new Error('Arbeitszeit nicht gefunden');
-    
-    db.workingShifts = db.workingShifts.filter(s => s.id !== id);
-    await writeDb(db);
-    await dbService.addLogEntry('success', `Arbeitszeit "${shift.title}" wurde gelöscht`);
+    try {
+      console.log('Attempting to delete working shift:', id);
+      
+      // First check if the document exists
+      const docRef = doc(db, 'workingShifts', id);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        console.log('Working shift already deleted:', id);
+        return;
+      }
+
+      // Get all documents that match this ID (should only be one, but let's be thorough)
+      const q = query(
+        collection(db, 'workingShifts'),
+        where('id', '==', id)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      // Delete all matching documents
+      const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      // Finally delete the main document
+      await deleteDoc(docRef);
+      
+      console.log('Successfully deleted working shift:', id);
+    } catch (error) {
+      console.error('Error deleting working shift:', error);
+      throw error;
+    }
   },
 
-  async getWorkingShifts(): Promise<WorkingShift[]> {
-    const db = await readDb();
-    if (!db.workingShifts || db.workingShifts.length === 0) {
-      // Initialisiere nur mit den Schichten für /schichten2
-      db.workingShifts = initialShifts2;
-      await writeDb(db);
-      await dbService.addLogEntry('success', 'Arbeitszeiten wurden initialisiert');
+  async getWorkingShiftsByOrganization(organizationId: string | undefined): Promise<WorkingShift[]> {
+    if (!organizationId) return [];
+    
+    try {
+      console.log('Getting shifts for organization:', organizationId);
+      const shiftsRef = collection(db, 'workingShifts') as CollectionReference<DocumentData>;
+      
+      // Only filter by organizationId in the query
+      const q = query(
+        shiftsRef,
+        where('organizationId', '==', organizationId)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      console.log('Raw query result size:', querySnapshot.size);
+      
+      // Map and validate each document
+      const shifts = await Promise.all(
+        querySnapshot.docs.map(async (doc, index) => {
+          console.log(`Processing shift ${index + 1}/${querySnapshot.size}:`, doc.id);
+          
+          // Double check that the document actually exists
+          const docRef = doc.ref;
+          const freshDoc = await getDoc(docRef);
+          
+          if (!freshDoc.exists()) {
+            console.warn(`Shift ${doc.id} does not exist in fresh check`);
+            return null;
+          }
+          
+          const data = freshDoc.data();
+          console.log(`Shift ${doc.id} data:`, data);
+          
+          // Validate all required fields
+          if (!data || 
+              !data.title || 
+              !data.startTime || 
+              !data.endTime || 
+              !data.organizationId ||
+              data.title.trim() === '' || 
+              data.startTime.trim() === '' || 
+              data.endTime.trim() === '') {
+            console.warn(`Invalid shift data for ID ${doc.id}:`, {
+              hasData: !!data,
+              hasTitle: data?.title,
+              hasStartTime: data?.startTime,
+              hasEndTime: data?.endTime,
+              hasOrgId: data?.organizationId,
+              titleEmpty: data?.title?.trim() === '',
+              startTimeEmpty: data?.startTime?.trim() === '',
+              endTimeEmpty: data?.endTime?.trim() === ''
+            });
+            // Delete invalid shift
+            await deleteDoc(docRef);
+            return null;
+          }
+          
+          // Convert Firestore timestamps to ISO strings
+          const createdAt = data.createdAt instanceof Object && 'seconds' in data.createdAt
+            ? new Date(data.createdAt.seconds * 1000).toISOString()
+            : typeof data.createdAt === 'string'
+              ? data.createdAt
+              : new Date().toISOString();
+              
+          const updatedAt = data.updatedAt instanceof Object && 'seconds' in data.updatedAt
+            ? new Date(data.updatedAt.seconds * 1000).toISOString()
+            : typeof data.updatedAt === 'string'
+              ? data.updatedAt
+              : new Date().toISOString();
+              
+          const date = data.date instanceof Object && 'seconds' in data.date
+            ? new Date(data.date.seconds * 1000).toISOString()
+            : typeof data.date === 'string'
+              ? data.date
+              : new Date().toISOString();
+          
+          // Always use the document ID as the shift ID
+          const shift = {
+            ...data,
+            id: doc.id, // Override any existing id field with the document ID
+            createdAt,
+            updatedAt,
+            date
+          } as WorkingShift;
+          
+          console.log(`Valid shift processed:`, shift);
+          return shift;
+        })
+      );
+      
+      // Filter out null values (invalid shifts)
+      const validShifts = shifts.filter((shift): shift is WorkingShift => shift !== null);
+      console.log('Valid shifts found:', validShifts.length, validShifts);
+      return validShifts;
+    } catch (error) {
+      console.error('Error getting working shifts by organization:', error);
+      throw error;
     }
-    return db.workingShifts;
+  },
+
+  async getWorkplansByOrganization(organizationId: string | undefined): Promise<any[]> {
+    if (!organizationId) return [];
+    
+    try {
+      const assignmentsRef = collection(db, 'assignments');
+      const q = query(assignmentsRef, where('organizationId', '==', organizationId));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting workplans by organization:', error);
+      throw error;
+    }
   },
 
   // Assignment operations
   async getAssignments(storeId?: string): Promise<ShiftAssignment[]> {
     try {
-      const db = await readDb();
-      if (!db) throw new Error('Database not initialized');
-      if (!db.assignments) {
-        return [];
-      }
+      const assignmentsRef = collection(db, 'assignments') as CollectionReference<DocumentData>;
+      let q;
       
       if (storeId) {
-        return db.assignments.filter(assignment => 
-          assignment.storeId.toString() === storeId.toString()
-        );
+        q = query(assignmentsRef, where('storeId', '==', storeId));
+      } else {
+        q = assignmentsRef;
       }
       
-      return db.assignments;
+      const querySnapshot = await getDocs(q);
+      console.log(`Found ${querySnapshot.size} assignments for store ${storeId || 'all'}`);
+      
+      const assignments = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Assignment data:', { id: doc.id, ...data });
+        return { id: doc.id, ...data } as ShiftAssignment;
+      });
+
+      return assignments;
     } catch (error) {
       console.error('Error getting assignments:', error);
-      return [];
+      throw error;
     }
   },
 
   async addAssignment(assignment: Omit<ShiftAssignment, 'id'>): Promise<string> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    const id = crypto.randomUUID();
-    
-    if (!db.assignments) {
-      db.assignments = [];
-    }
-
-    const newAssignment: ShiftAssignment = {
-      id,
-      ...assignment
-    };
-
-    db.assignments.push(newAssignment);
-    await writeDb(db);
-    
-    return id;
-  },
-
-  async updateAssignment(id: string, assignmentData: Partial<ShiftAssignment>): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    
-    if (!db.assignments) {
-      db.assignments = [];
-    }
-
-    const index = db.assignments.findIndex(a => a.id === id);
-    
-    if (index === -1) {
-      throw new Error('Assignment not found');
-    }
-
-    db.assignments[index] = {
-      ...db.assignments[index],
-      ...assignmentData
-    };
-
-    await writeDb(db);
-  },
-
-  async deleteAssignment(id: string): Promise<void> {
-    const db = await readDb();
-    if (!db) throw new Error('Database not initialized');
-    
-    if (!db.assignments) {
-      db.assignments = [];
-      return;
-    }
-
-    const index = db.assignments.findIndex(a => a.id === id);
-    
-    if (index === -1) {
-      throw new Error('Assignment not found');
-    }
-
-    db.assignments.splice(index, 1);
-    await writeDb(db);
-  },
-
-  async saveAssignment(assignment: ShiftAssignment): Promise<void> {
     try {
-      const db = await readDb();
-      if (!db) throw new Error('Database not initialized');
-      db.assignments = db.assignments || [];
-      db.assignments.push(assignment);
-      await writeDb(db);
+      // Ensure date is in YYYY-MM-DD format
+      const dateStr = new Date(assignment.date).toISOString().split('T')[0];
+      const now = new Date().toISOString();
+      
+      const docRef = await addDoc(collection(db, 'assignments'), {
+        ...assignment,
+        date: dateStr,
+        createdAt: now,
+        updatedAt: now
+      });
+      return docRef.id;
     } catch (error) {
-      console.error('Error saving assignment:', error);
+      console.error('Error adding assignment:', error);
       throw error;
     }
   },
+
+  async updateAssignment(id: string, assignmentData: Partial<ShiftAssignment>): Promise<void> {
+    try {
+      const docRef = doc(db, 'assignments', id);
+      const updateData = { ...assignmentData };
+      
+      // If date is being updated, ensure it's in YYYY-MM-DD format
+      if (updateData.date) {
+        updateData.date = new Date(updateData.date).toISOString().split('T')[0];
+      }
+      updateData.updatedAt = new Date().toISOString();
+      
+      await updateDoc(docRef, updateData);
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      throw error;
+    }
+  },
+
+  async deleteAssignment(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'assignments', id));
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      throw error;
+    }
+  },
+
+  async getAllAssignmentsByOrganization(organizationId: string | undefined): Promise<ShiftAssignment[]> {
+    if (!organizationId) return [];
+    
+    try {
+      const assignmentsRef = collection(db, 'assignments');
+      const q = query(assignmentsRef, where('organizationId', '==', organizationId));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShiftAssignment));
+    } catch (error) {
+      console.error('Error getting assignments by organization:', error);
+      throw error;
+    }
+  },
+
+  // Deprecated: Use getAllAssignmentsByOrganization instead
+  async getAssignmentsByOrganization(organizationId: string | undefined): Promise<ShiftAssignment[]> {
+    if (!organizationId) return [];
+    
+    try {
+      const assignmentsRef = collection(db, 'assignments');
+      const q = query(assignmentsRef, where('organizationId', '==', organizationId));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShiftAssignment));
+    } catch (error) {
+      console.error('Error getting assignments by organization:', error);
+      throw error;
+    }
+  },
+
+  // User-specific assignment operations
+  async getUserAssignments(storeId: string, userId: string): Promise<ShiftAssignment[]> {
+    try {
+      const assignmentsRef = collection(db, 'users', userId, 'assignments');
+      const q = query(assignmentsRef, where('storeId', '==', storeId));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShiftAssignment));
+    } catch (error) {
+      console.error('Error getting user assignments:', error);
+      throw error;
+    }
+  },
+
+  async addUserAssignment(assignment: Omit<ShiftAssignment, 'id'>, userId: string): Promise<string> {
+    try {
+      const assignmentsRef = collection(db, 'users', userId, 'assignments');
+      const docRef = await addDoc(assignmentsRef, assignment);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding user assignment:', error);
+      throw error;
+    }
+  },
+
+  async updateUserAssignment(id: string, assignment: Partial<ShiftAssignment>, userId: string): Promise<void> {
+    try {
+      const assignmentRef = doc(db, 'users', userId, 'assignments', id);
+      await updateDoc(assignmentRef, assignment);
+    } catch (error) {
+      console.error('Error updating user assignment:', error);
+      throw error;
+    }
+  },
+
+  async deleteUserAssignment(id: string, userId: string): Promise<void> {
+    try {
+      const assignmentRef = doc(db, 'assignments', id);
+      await deleteDoc(assignmentRef);
+    } catch (error) {
+      console.error('Error deleting user assignment:', error);
+      throw error;
+    }
+  },
+
+  async createUserDocument(userId: string, email: string, role: 'admin' | 'user' = 'user'): Promise<void> {
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          email,
+          role,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        console.log('User document created successfully');
+      }
+    } catch (error) {
+      console.error('Error creating user document:', error);
+      throw error;
+    }
+  }
 };
+
+export { dbService };

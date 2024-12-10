@@ -6,6 +6,7 @@ export interface Employee {
   mobilePhone: string;
   role?: string;
   storeId?: string;
+  organizationId: string;
   createdAt: string;
   updatedAt: string;
 }

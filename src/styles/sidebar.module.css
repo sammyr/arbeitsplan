@@ -1,0 +1,11 @@
+.sidebar-overlay {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Prevent any possible overrides */
+.sidebar-overlay[class] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

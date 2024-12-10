@@ -7,6 +7,7 @@ export interface ShiftAssignment {
   shiftId: string;
   date: string;
   storeId: string;
+  organizationId: string;
   workHours: number;
   employee?: Employee;
   shift?: WorkingShift;

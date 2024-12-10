@@ -5,6 +5,6 @@ export interface LogEntry {
   type: LogType;
   message: string;
   details?: string;
-  timestamp: string;
+  createdAt: string | Date;
   userId?: string;
 }

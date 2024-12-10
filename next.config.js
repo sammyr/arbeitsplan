@@ -1,11 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Optimiert für Produktions-Deployment
-  poweredByHeader: false, // Entfernt den X-Powered-By Header für bessere Sicherheit
   reactStrictMode: true,
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production', // Entfernt console.log im Produktionsbuild
+  experimental: {
+    serverActions: true,
   },
-};
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
+  poweredByHeader: false,
+  compress: true,
+  generateEtags: true,
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

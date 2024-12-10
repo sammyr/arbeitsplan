@@ -13,33 +13,39 @@ const AUTH_ENABLED = false;
 const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password'];
 
 export async function middleware(request: NextRequest) {
-  // If authentication is disabled, allow all requests
-  if (!AUTH_ENABLED) {
-    return NextResponse.next();
-  }
-
-  const { pathname } = request.nextUrl;
-
-  // Allow access to public paths
-  if (publicPaths.includes(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Check for auth token
-  const token = request.cookies.get('token')?.value;
-
-  if (!token) {
-    // Redirect to login if no token is present
-    return NextResponse.redirect(new URL('/auth/login', request.url));
-  }
-
   try {
-    // Verify the token
-    await jwtVerify(token, secretKey);
-    return NextResponse.next();
+    // If authentication is disabled, allow all requests
+    if (!AUTH_ENABLED) {
+      return NextResponse.next();
+    }
+
+    const { pathname } = request.nextUrl;
+
+    // Allow access to public paths
+    if (publicPaths.includes(pathname)) {
+      return NextResponse.next();
+    }
+
+    // Check for auth token
+    const token = request.cookies.get('token')?.value;
+
+    if (!token) {
+      // Redirect to login if no token is present
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
+
+    try {
+      // Verify the token
+      await jwtVerify(token, secretKey);
+      return NextResponse.next();
+    } catch (error) {
+      // Redirect to login if token is invalid
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
   } catch (error) {
-    // Redirect to login if token is invalid
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+    // If any error occurs during middleware execution, log it and continue
+    console.error('Middleware error:', error);
+    return NextResponse.next();
   }
 }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, dateFnsLocalizer, ToolbarProps, Event as BigCalendarEvent, View, stringOrDate } from 'react-big-calendar';
 import withDragAndDrop, { withDragAndDropProps, EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop';
-import { format, parse, startOfWeek, getDay, addMonths } from 'date-fns';
+import { format, parse, startOfWeek, getDay, addMonths, startOfDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Employee } from '@/types/employee';
 import { Shift } from '@/types/shift';
@@ -173,12 +173,8 @@ const WorkplanPage = () => {
 
         // Konvertiere das Datum korrekt mit Zeitzonen-Berücksichtigung
         const shiftDate = new Date(shift.date);
-        const start = new Date(
-          shiftDate.getFullYear(),
-          shiftDate.getMonth(),
-          shiftDate.getDate(),
-          0, 0, 0
-        );
+        const start = startOfDay(shiftDate); // Use date-fns startOfDay for consistency
+        const dateStr = format(start, 'yyyy-MM-dd'); // Use date-fns format for consistency
 
         return {
           id: shift.id,
@@ -191,7 +187,7 @@ const WorkplanPage = () => {
           extendedProps: {
             shift: {
               ...shift,
-              date: start.toISOString().split('T')[0] // Speichere nur das Datum ohne Zeit
+              date: dateStr // Speichere nur das Datum ohne Zeit
             },
             employee,
             workingShift
@@ -220,7 +216,7 @@ const WorkplanPage = () => {
       safeSetEvents([]);  // Use safeSetEvents instead
       
       // Fetch fresh data from database
-      const shifts = await dbService.getShifts(selectedStore.id);
+      const shifts = await dbService.getShiftsByOrganization(selectedStore.organizationId);
       console.log('Fetched shifts from database:', shifts.length);
       
       const processedShifts = shifts.map(shift => {
@@ -231,19 +227,19 @@ const WorkplanPage = () => {
           console.log('Skipping shift due to missing data:', {
             shiftId: shift.id,
             hasEmployee: !!employee,
-            hasWorkingShift: !!workingShift
+            hasWorkingShift: !!workingShift,
+            employeeId: shift.employeeId,
+            workingShiftId: shift.shiftId,
+            employee: employee,
+            workingShift: workingShift
           });
           return null;
         }
 
         // Ensure consistent date handling by setting time to midnight
         const shiftDate = new Date(shift.date);
-        const eventStart = new Date(
-          shiftDate.getFullYear(),
-          shiftDate.getMonth(),
-          shiftDate.getDate(),
-          0, 0, 0
-        );
+        const eventStart = startOfDay(shiftDate); // Use date-fns startOfDay for consistency
+        const dateStr = format(eventStart, 'yyyy-MM-dd'); // Use date-fns format for consistency
 
         return {
           id: shift.id,
@@ -254,14 +250,22 @@ const WorkplanPage = () => {
           shiftId: shift.shiftId,
           storeId: shift.storeId,
           extendedProps: {
-            shift,
+            shift: {
+              ...shift,
+              date: dateStr // Speichere nur das Datum ohne Zeit
+            },
             employee,
             workingShift
           }
         };
       }).filter((shift): shift is CalendarEvent => shift !== null);
 
-      console.log('About to set processed shifts:', processedShifts.length);
+      console.log('About to set processed shifts:', {
+        total: shifts.length,
+        processed: processedShifts.length,
+        shifts: shifts,
+        events: processedShifts
+      });
       safeSetEvents(processedShifts);  // Use safeSetEvents instead
       
     } catch (error) {
@@ -284,23 +288,19 @@ const WorkplanPage = () => {
     try {
       // Create a new date at midnight to ensure consistent date handling
       const startDate = typeof start === 'string' ? new Date(start) : start;
-      const newDate = new Date(
-        startDate.getFullYear(),
-        startDate.getMonth(),
-        startDate.getDate(),
-        0, 0, 0
-      );
+      const newDate = startOfDay(startDate); // Use date-fns startOfDay for consistency
+      const dateStr = format(newDate, 'yyyy-MM-dd'); // Use date-fns format for consistency
 
       console.log('Processing date:', {
         originalDate: start,
         newDateFormatted: newDate,
         isoString: newDate.toISOString(),
-        dateOnly: newDate.toISOString().split('T')[0]
+        dateOnly: dateStr
       });
 
       // Update the database first
       const updatedShift: Partial<Shift> = {
-        date: newDate.toISOString().split('T')[0],
+        date: dateStr,
         employeeId: event.employeeId,
         shiftId: event.shiftId,
         storeId: event.storeId
@@ -335,23 +335,19 @@ const WorkplanPage = () => {
     try {
       // Verhindere das sofortige Update des UI
       const startDate = typeof start === 'string' ? new Date(start) : start;
-      const newDate = new Date(
-        startDate.getFullYear(),
-        startDate.getMonth(),
-        startDate.getDate(),
-        0, 0, 0
-      );
+      const newDate = startOfDay(startDate); // Use date-fns startOfDay for consistency
+      const dateStr = format(newDate, 'yyyy-MM-dd'); // Use date-fns format for consistency
 
       console.log('Processing date:', {
         originalDate: start,
         newDateFormatted: newDate,
         isoString: newDate.toISOString(),
-        dateOnly: newDate.toISOString().split('T')[0]
+        dateOnly: dateStr
       });
 
       // Update the database first
       const updatedShift: Partial<Shift> = {
-        date: newDate.toISOString().split('T')[0],
+        date: dateStr,
         employeeId: event.employeeId,
         shiftId: event.shiftId,
         storeId: event.storeId
@@ -486,10 +482,7 @@ const WorkplanPage = () => {
         shift,
         employee,
         workingShift
-      },
-      shift,
-      employee,
-      workingShift
+      }
     });
     
     setSelectedDate(event.start!);
@@ -586,6 +579,8 @@ const WorkplanPage = () => {
 
       // Update the events state
       const shiftDate = new Date(newShiftData.date);
+      const eventStart = startOfDay(shiftDate); // Use date-fns startOfDay for consistency
+      const dateStr = format(eventStart, 'yyyy-MM-dd'); // Use date-fns format for consistency
 
       setEvents(prevEvents =>
         prevEvents.map(event => {
@@ -593,8 +588,8 @@ const WorkplanPage = () => {
             return {
               ...event,
               title: getShiftLabel(updatedShift, employee, workingShift),
-              start: shiftDate,
-              end: shiftDate,
+              start: eventStart,
+              end: eventStart,
               employeeId: newShiftData.employeeId,
               shiftId: newShiftData.shiftId,
               extendedProps: {
@@ -623,7 +618,7 @@ const WorkplanPage = () => {
     endTime: string;
     date: string;
   }) => {
-    console.log('handleCreateShift called');  // Check if function is called
+    console.log('handleCreateShift called with:', shiftData);  // Check if function is called
     try {
       if (!selectedStore) {
         throw new Error('Kein Geschäft ausgewählt');
@@ -631,43 +626,59 @@ const WorkplanPage = () => {
 
       // Find the employee and shift first
       const employee = employees.find(e => e.id === shiftData.employeeId);
-      const shift = workingShifts.find(s => s.id === shiftData.shiftId);
+      const workingShift = workingShifts.find(s => s.id === shiftData.shiftId);
 
-      if (!employee || !shift) {
+      if (!employee || !workingShift) {
+        console.error('Missing data:', {
+          employee,
+          workingShift,
+          employeeId: shiftData.employeeId,
+          shiftId: shiftData.shiftId
+        });
         throw new Error('Mitarbeiter oder Schicht nicht gefunden');
       }
 
       // Create new shift
       const newShift = {
-        title: `${employee.firstName} ${employee.lastName} - ${shift.title}`,
+        employeeId: shiftData.employeeId,
+        shiftId: shiftData.shiftId,
+        storeId: selectedStore.id,
+        organizationId: selectedStore.organizationId,
+        date: shiftData.date,
         startTime: shiftData.startTime,
-        endTime: shiftData.endTime
+        endTime: shiftData.endTime,
+        workHours: workingShift.workHours,
+        title: workingShift.title
       };
 
+      console.log('Creating new shift:', newShift);
       const createdShift = await dbService.addShift(newShift);
       console.log('Created shift:', createdShift);
 
       // Create the calendar event
       const shiftDate = new Date(shiftData.date);
+      const eventStart = startOfDay(shiftDate); // Use date-fns startOfDay for consistency
+      const dateStr = format(eventStart, 'yyyy-MM-dd'); // Use date-fns format for consistency
 
       const newEvent: CalendarEvent = {
         id: createdShift.id,
-        title: getShiftLabel(createdShift, employee, shift),
-        start: shiftDate,
-        end: shiftDate,
+        title: getShiftLabel(createdShift, employee, workingShift),
+        start: eventStart,
+        end: eventStart,
         employeeId: createdShift.employeeId,
         shiftId: createdShift.shiftId,
         storeId: createdShift.storeId,
         extendedProps: {
-          shift: createdShift,
+          shift: {
+            ...createdShift,
+            date: dateStr // Speichere nur das Datum ohne Zeit
+          },
           employee,
-          workingShift: shift
-        },
-        shift: createdShift,
-        employee,
-        workingShift: shift
+          workingShift
+        }
       };
 
+      console.log('Adding new event:', newEvent);
       setEvents(prev => [...prev, newEvent]);
       showAlert('Neue Schicht wurde erstellt', 'success');
     } catch (error) {
@@ -676,6 +687,40 @@ const WorkplanPage = () => {
       throw error;
     }
   }, [selectedStore, employees, workingShifts, setEvents, showAlert]);
+
+  const transformShiftsToEvents = useCallback((shifts: Shift[]): CalendarEvent[] => {
+    return shifts.map(shift => {
+      const employee = employees.find(e => e.id === shift.employeeId);
+      const workingShift = workingShifts.find(ws => ws.id === shift.shiftId);
+
+      if (!employee || !workingShift) {
+        console.error('Missing data:', { employee, workingShift, shift });
+        return null;
+      }
+
+      const shiftDate = new Date(shift.date);
+      const eventStart = startOfDay(shiftDate); // Use date-fns startOfDay for consistency
+      const dateStr = format(eventStart, 'yyyy-MM-dd'); // Use date-fns format for consistency
+
+      return {
+        id: shift.id,
+        title: getShiftLabel(shift, employee, workingShift),
+        start: eventStart,
+        end: eventStart,
+        employeeId: shift.employeeId,
+        shiftId: shift.shiftId,
+        storeId: shift.storeId,
+        extendedProps: {
+          shift: {
+            ...shift,
+            date: dateStr // Speichere nur das Datum ohne Zeit
+          },
+          employee,
+          workingShift
+        }
+      };
+    }).filter((event): event is CalendarEvent => event !== null);
+  }, [employees, workingShifts]);
 
   const calendarOptions = useMemo(() => ({
     defaultView: 'month' as View,
@@ -775,77 +820,20 @@ const WorkplanPage = () => {
     let isMounted = true;
 
     const loadShifts = async () => {
-      if (!selectedStore?.id || !isMounted) return;
+      if (!selectedStore?.organizationId || !isMounted) return;
 
       try {
         setIsLoading(true);
-        const loadedShifts = await dbService.getShifts(selectedStore.id);
-        if (!isMounted) return;
-
-        setShifts(loadedShifts);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error loading shifts:', error);
-        if (isMounted) {
-          showAlert('Fehler beim Laden der Schichten', 'error');
-        }
-        setIsLoading(false);
-      }
-    };
-
-    loadShifts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedStore?.id, showAlert]);
-
-  const transformShiftsToEvents = useCallback((shifts: Shift[]): CalendarEvent[] => {
-    return shifts.map(shift => {
-      const employee = employees.find(e => e.id === shift.employeeId);
-      const workingShift = workingShifts.find(ws => ws.id === shift.shiftId);
-
-      if (!employee || !workingShift) {
-        console.error('Missing data:', { employee, workingShift, shift });
-        return null;
-      }
-
-      const shiftDate = new Date(shift.date);
-      const title = getShiftLabel(shift, employee, workingShift);
-
-      return {
-        id: shift.id,
-        title,
-        start: shiftDate,
-        end: shiftDate,
-        employeeId: shift.employeeId,
-        shiftId: shift.shiftId,
-        storeId: shift.storeId,
-        extendedProps: {
-          shift,
-          employee,
-          workingShift
-        },
-        shift,
-        employee,
-        workingShift
-      };
-    }).filter((event): event is CalendarEvent => event !== null);
-  }, [selectedStore?.id, employees, workingShifts]);
-
-  useEffect(() => {
-    console.log('useEffect called');  // Check if effect is called
-    let isMounted = true;
-
-    const loadShifts = async () => {
-      if (!selectedStore?.id || !isMounted) return;
-
-      try {
-        setIsLoading(true);
-        const loadedShifts = await dbService.getShifts(selectedStore.id);
+        const loadedShifts = await dbService.getShiftsByOrganization(selectedStore.organizationId);
         if (!isMounted) return;
 
         const processedEvents = transformShiftsToEvents(loadedShifts);
+        console.log('Loaded shifts:', {
+          total: loadedShifts.length,
+          processed: processedEvents.length,
+          shifts: loadedShifts,
+          events: processedEvents
+        });
         setEvents(processedEvents);
         setIsLoading(false);
       } catch (error) {
@@ -862,7 +850,44 @@ const WorkplanPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedStore?.id, transformShiftsToEvents, showAlert]);
+  }, [selectedStore?.organizationId, transformShiftsToEvents, showAlert]);
+
+  useEffect(() => {
+    console.log('useEffect called');  // Check if effect is called
+    let isMounted = true;
+
+    const loadShifts = async () => {
+      if (!selectedStore?.organizationId || !isMounted) return;
+
+      try {
+        setIsLoading(true);
+        const shifts = await dbService.getShiftsByOrganization(selectedStore.organizationId);
+        if (!isMounted) return;
+
+        const processedEvents = transformShiftsToEvents(shifts);
+        console.log('Loaded shifts:', {
+          total: shifts.length,
+          processed: processedEvents.length,
+          shifts: shifts,
+          events: processedEvents
+        });
+        setEvents(processedEvents);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading shifts:', error);
+        if (isMounted) {
+          showAlert('Fehler beim Laden der Schichten', 'error');
+        }
+        setIsLoading(false);
+      }
+    };
+
+    loadShifts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedStore?.organizationId, transformShiftsToEvents, showAlert]);
 
   return (
     <div className="h-full p-4 bg-gray-50 max-w-[95vw] mx-auto">

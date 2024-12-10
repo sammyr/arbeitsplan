@@ -9,16 +9,21 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
-import { initialStores } from '@/lib/initialData';
 import { storage } from '@/lib/storage';
 import * as XLSX from 'xlsx';
+import AuthGuard from '@/components/AuthGuard';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function AuswertungenPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
   const [stores, setStores] = useState<Store[]>(() => {
     const savedStores = storage.getStores();
-    return savedStores.length > 0 ? savedStores : initialStores;
+    return savedStores;
   });
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (typeof window !== 'undefined') {
@@ -41,118 +46,75 @@ export default function AuswertungenPage() {
   }, [selectedDate]);
 
   const loadData = async () => {
+    if (!user) {
+      console.log('No user found, skipping data load');
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('Loading data...', {
         selectedDate: selectedDate.toISOString(),
-        stores: stores.map(s => ({ id: s.id, name: s.name }))
+        userId: user.uid
       });
       
-      // Load all assignments for all stores
+      // Load employees and stores for the organization
+      const [loadedEmployees, loadedStores] = await Promise.all([
+        dbService.getEmployeesByOrganization(user.uid),
+        dbService.getStores(user.uid)
+      ]);
+
+      console.log('Loaded initial data:', {
+        employees: loadedEmployees.length,
+        stores: loadedStores.length
+      });
+
+      setStores(loadedStores);
+      setEmployees(loadedEmployees);
+
+      // Load assignments for all stores
       const allAssignments: ShiftAssignment[] = [];
-      for (const store of stores) {
-        console.log('Loading assignments for store:', store.name);
+      for (const store of loadedStores) {
         const storeAssignments = await dbService.getAssignments(store.id);
         console.log('Got assignments for store:', {
           store: store.name,
-          count: storeAssignments.length,
-          assignments: storeAssignments.map(a => ({
-            id: a.id,
-            date: a.date,
-            employeeId: a.employeeId,
-            workHours: a.workHours,
-            shiftId: a.shiftId,
-            storeId: a.storeId
-          }))
+          count: storeAssignments.length
         });
-        allAssignments.push(...storeAssignments);
+        
+        // Filter assignments for the current month
+        const filteredAssignments = storeAssignments.filter(assignment => {
+          const assignmentDate = new Date(assignment.date);
+          return assignmentDate.getMonth() === selectedDate.getMonth() &&
+                 assignmentDate.getFullYear() === selectedDate.getFullYear();
+        });
+        
+        allAssignments.push(...filteredAssignments);
       }
 
-      const loadedEmployees = await dbService.getEmployees();
-
-      console.log('Loaded data:', {
-        employees: loadedEmployees.length,
-        employeesList: loadedEmployees.map(e => `${e.firstName} ${e.lastName}`),
-        assignments: allAssignments.length,
-        assignmentDates: allAssignments.map(a => ({
-          date: a.date,
-          workHours: a.workHours,
-          storeId: a.storeId
-        })),
-        stores: stores.length
+      console.log('Final data loaded:', {
+        totalAssignments: allAssignments.length,
+        monthYear: format(selectedDate, 'MMMM yyyy', { locale: de })
       });
 
-      setEmployees(loadedEmployees);
       setAssignments(allAssignments);
-      setIsLoading(false);
 
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Fehler beim Laden der Daten');
+    } finally {
       setIsLoading(false);
     }
   };
 
   const calculateHours = (employeeId: string, storeId: string) => {
-    const start = startOfMonth(selectedDate);
-    const end = endOfMonth(selectedDate);
-    
-    console.log('Calculating hours:', {
-      employeeId,
-      storeId,
-      start: start.toISOString(),
-      end: end.toISOString(),
-      totalAssignments: assignments.length
-    });
-    
-    const filteredAssignments = assignments.filter(
-      (assignment) => {
-        const assignmentDate = new Date(assignment.date);
-        const matches = 
-          assignment.employeeId === employeeId &&
-          assignment.storeId === storeId &&
-          assignmentDate >= start &&
-          assignmentDate <= end;
-          
-        if (matches) {
-          console.log('Found matching assignment:', {
-            date: assignment.date,
-            workHours: assignment.workHours,
-            storeId: assignment.storeId
-          });
-        }
-        
-        return matches;
-      }
-    );
-
-    console.log('Filtered assignments:', {
-      employeeId,
-      storeId,
-      count: filteredAssignments.length,
-      assignments: filteredAssignments
-    });
-
-    const totalHours = filteredAssignments.reduce((total, assignment) => {
-      const hours = assignment.workHours || 0;
-      console.log('Adding hours:', {
-        date: assignment.date,
-        hours,
-        storeId: assignment.storeId,
-        runningTotal: total + hours
-      });
-      return total + hours;
-    }, 0);
-
-    console.log('Final hours:', {
-      employeeId,
-      storeId,
-      month: format(selectedDate, 'MM/yyyy'),
-      assignments: filteredAssignments.length,
-      totalHours
-    });
-
-    return totalHours;
+    return assignments
+      .filter(assignment => 
+        assignment.employeeId === employeeId &&
+        assignment.storeId === storeId &&
+        new Date(assignment.date).getMonth() === selectedDate.getMonth() &&
+        new Date(assignment.date).getFullYear() === selectedDate.getFullYear()
+      )
+      .reduce((total, assignment) => total + (assignment.workHours || 0), 0);
   };
 
   const calculateTotalHours = (employeeId: string) => {
@@ -175,7 +137,7 @@ export default function AuswertungenPage() {
     }, 0);
   };
 
-  const previousMonth = () => {
+  const handlePrevMonth = () => {
     setSelectedDate(prev => {
       const newDate = new Date(prev);
       newDate.setMonth(newDate.getMonth() - 1);
@@ -186,7 +148,7 @@ export default function AuswertungenPage() {
     });
   };
 
-  const nextMonth = () => {
+  const handleNextMonth = () => {
     setSelectedDate(prev => {
       const newDate = new Date(prev);
       newDate.setMonth(newDate.getMonth() + 1);
@@ -268,148 +230,213 @@ export default function AuswertungenPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-12">
-        <h1 className="text-3xl font-bold text-slate-900 mb-3">Auswertungen</h1>
-        <p className="text-slate-600">
-          Übersicht aller Arbeitsstunden und Mitarbeiter innerhalb eines Monats.<br></br>
-          Hinweis: Die Daten können über Excel in dazu separat angelegten Tabellen exportiert werden. 
-        </p>
-      </div>
-      
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200">
-          <button
-            onClick={previousMonth}
-            className="p-2 hover:bg-gray-50 rounded-l-lg border-r"
-            aria-label="Vorheriger Monat"
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
-          
-          <div className="px-4 py-2 text-gray-700 font-medium">
-            {format(selectedDate, 'MMMM yyyy', { locale: de })}
-          </div>
-          
-          <button
-            onClick={nextMonth}
-            className="p-2 hover:bg-gray-50 rounded-r-lg border-l"
-            aria-label="Nächster Monat"
-          >
-            <ChevronRightIcon className="h-5 w-5 text-gray-600" />
-          </button>
-        </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-transparent">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <h1 className="text-2xl font-semibold text-slate-800">
+                    Auswertungen für {format(selectedDate, 'MMMM yyyy', { locale: de })}
+                  </h1>
+                  <button
+                    onClick={handleExcelExport}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M12 1.5a.75.75 0 01.75.75V7.5h-1.5V2.25A.75.75 0 0112 1.5zM11.25 7.5v5.69l-1.72-1.72a.75.75 0 00-1.06 1.06l3 3a.75.75 0 001.06 0l3-3a.75.75 0 10-1.06-1.06l-1.72 1.72V7.5h3.75a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9a3 3 0 013-3h3.75z" />
+                    </svg>
+                    Excel Export
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setMonth(newDate.getMonth() - 1);
+                      setSelectedDate(newDate);
+                    }}
+                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <ChevronLeftIcon className="h-5 w-5" />
+                  </button>
+                  
+                  <span className="text-lg font-medium">
+                    {format(selectedDate, 'MMMM yyyy', { locale: de })}
+                  </span>
+                  
+                  <button
+                    onClick={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setMonth(newDate.getMonth() + 1);
+                      setSelectedDate(newDate);
+                    }}
+                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <ChevronRightIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
 
-        <button
-          onClick={handleExcelExport}
-          className="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Excel exportieren
-        </button>
-      </div>
+            {/* Content */}
+            {isLoading ? (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                  <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                </div>
+              </div>
+            ) : assignments.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <p className="text-slate-600">
+                  Keine Schichtzuweisungen für {format(selectedDate, 'MMMM yyyy', { locale: de })} gefunden.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Individual Store Sections */}
+                {stores.map((store) => {
+                  // Calculate total hours for this store
+                  const storeHours = employees.reduce((total, employee) => {
+                    return total + calculateHours(employee.id, store.id);
+                  }, 0);
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-        </div>
-      ) : employees.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          Keine Mitarbeiter gefunden
-        </div>
-      ) : assignments.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          Keine Schichtzuweisungen gefunden
-        </div>
-      ) : (
-        <>
-          <div className="mb-8 space-y-8">
-            {stores.map((store) => {
-              // Calculate total hours for this store
-              const storeHours = employees.reduce((total, employee) => {
-                return total + calculateHours(employee.id, store.id);
-              }, 0);
+                  // Skip stores with no hours
+                  if (storeHours <= 0) return null;
 
-              // Only show stores that have hours
-              if (storeHours <= 0) return null;
+                  return (
+                    <div key={store.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                      <div className="p-6 border-b border-slate-200">
+                        <h2 className="text-xl font-semibold text-slate-800">
+                          {store.name}
+                        </h2>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Mitarbeiter
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Stunden
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-slate-200">
+                            {employees.map((employee) => {
+                              const hours = calculateHours(employee.id, store.id);
+                              if (hours <= 0) return null;
 
-              return (
-                <div key={store.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold mb-4">{store.name}</h3>
+                              return (
+                                <tr key={employee.id}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                    {employee.firstName} {employee.lastName}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">
+                                    {hours.toFixed(1)} Stunden
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            <tr className="bg-slate-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                Gesamt
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
+                                {storeHours.toFixed(1)} Stunden
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Total Overview Section */}
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-slate-200">
+                    <h2 className="text-xl font-semibold text-slate-800">
+                      Gesamtübersicht
+                    </h2>
+                  </div>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="py-2 px-4 border-b text-left">Mitarbeiter</th>
-                          <th className="py-2 px-4 border-b text-right">Stunden</th>
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Mitarbeiter
+                          </th>
+                          {stores.map((store) => (
+                            <th key={store.id} scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              {store.name}
+                            </th>
+                          ))}
+                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Gesamt
+                          </th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="bg-white divide-y divide-slate-200">
                         {employees.map((employee) => {
-                          const hours = calculateHours(employee.id, store.id);
-                          if (hours <= 0) return null;
+                          const totalHours = calculateTotalHours(employee.id);
+                          if (totalHours === 0) return null;
 
                           return (
-                            <tr key={employee.id} className="hover:bg-gray-50">
-                              <td className="py-2 px-4 border-b">
+                            <tr key={employee.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                                 {employee.firstName} {employee.lastName}
                               </td>
-                              <td className="py-2 px-4 border-b text-right">
-                                {hours.toFixed(1)}
+                              {stores.map((store) => {
+                                const hours = calculateHours(employee.id, store.id);
+                                return (
+                                  <td key={store.id} className="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">
+                                    {hours > 0 ? `${hours.toFixed(1)}` : '-'}
+                                  </td>
+                                );
+                              })}
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
+                                {totalHours.toFixed(1)} Stunden
                               </td>
                             </tr>
                           );
                         })}
-                        <tr className="bg-gray-50 font-semibold">
-                          <td className="py-2 px-4 border-b">Gesamt</td>
-                          <td className="py-2 px-4 border-b text-right">
-                            {storeHours.toFixed(1)}
+                        <tr className="bg-slate-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                            Gesamt
+                          </td>
+                          {stores.map((store) => {
+                            const total = employees.reduce(
+                              (sum, employee) => sum + calculateHours(employee.id, store.id),
+                              0
+                            );
+                            return (
+                              <td key={store.id} className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
+                                {total > 0 ? `${total.toFixed(1)}` : '-'}
+                              </td>
+                            );
+                          })}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
+                            {employees
+                              .reduce((sum, employee) => sum + calculateTotalHours(employee.id), 0)
+                              .toFixed(1)} Stunden
                           </td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            )}
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              Gesamtstunden pro Mitarbeiter
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="py-2 px-4 border-b text-left">Mitarbeiter</th>
-                    <th className="py-2 px-4 border-b text-right">Gesamtstunden</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.map((employee) => {
-                    const totalHours = calculateTotalHours(employee.id);
-                    if (totalHours <= 0) return null;
-
-                    return (
-                      <tr key={employee.id} className="hover:bg-gray-50">
-                        <td className="py-2 px-4 border-b">
-                          {employee.firstName} {employee.lastName}
-                        </td>
-                        <td className="py-2 px-4 border-b text-right">
-                          {totalHours.toFixed(1)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+        </div>
+      </div>
+    </AuthGuard>
   );
 }

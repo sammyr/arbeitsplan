@@ -14,22 +14,22 @@ const features = [
     href: '/dashboard',
   },
   {
-    name: 'Arbeitsplan-Kalender',
+    name: 'Arbeitsplan',
     description: 'Anzeigen und Verwalten von Mitarbeiterplänen in einem interaktiven Kalender.',
     icon: MdCalendarMonth,
-    href: '/arbeitsplan3',
+    href: '/arbeitsplan',
   },
   {
     name: 'Mitarbeiter-verwaltung',
-    description: 'Hinzufügen, Bearbeiten und Verwalten von Mitarbeiter-informationen.',
+    description: 'Hinzufügen, Bearbeiten und Verwalten von Mitarbeiterinformationen.',
     icon: MdPeople,
-    href: '/employees',
+    href: '/mitarbeiter',
   },
   {
-    name: 'Arbeitszeiten',
+    name: 'Schichten',
     description: 'Konfigurieren und Verwalten von Arbeitszeitplänen.',
     icon: MdAccessTime,
-    href: '/schichten2',
+    href: '/schichten',
   },
   {
     name: 'Auswertungen',
@@ -41,19 +41,19 @@ const features = [
     name: 'Logbuch',
     description: 'Protokollierung und Übersicht aller wichtigen Ereignisse.',
     icon: MdBook,
-    href: '/logbuch',
+    href: '/logs',
   },
   {
-    name: 'Hilfe',
-    description: 'Anleitungen und Hilfestellung zur Nutzung des Systems.',
+    name: 'Import/Export',
+    description: 'Daten importieren und exportieren.',
     icon: MdHelp,
-    href: '/help',
+    href: '/import',
   },
   {
     name: 'Einstellungen',
-    description: 'Konfigurieren Sie EMail Benach-richtigungen und andere Systemeinstellungen.',
+    description: 'Konfigurieren Sie E-Mail-Benachrichtigungen und andere Systemeinstellungen.',
     icon: MdSettings,
-    href: '/settings',
+    href: '/einstellungen',
   },
 ];
 
@@ -94,7 +94,7 @@ export default function Home() {
                     </div>
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">{feature.name}</h2>
-                      <p className="mt-2 text-gray-600">{feature.description}</p>
+                      <p className="mt-2 text-sm text-gray-600">{feature.description}</p>
                     </div>
                   </div>
                 </Link>

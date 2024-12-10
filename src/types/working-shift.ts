@@ -8,6 +8,7 @@ export interface WorkingShift {
   endTime: string;
   shiftId: string;
   storeId: string;
+  organizationId: string;
   color?: string;
   createdAt: string;
   updatedAt: string;

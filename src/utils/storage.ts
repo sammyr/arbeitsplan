@@ -5,10 +5,10 @@ import { WorkingShift, WorkplanEntry } from '@/types';
 import { Store } from '@/types/store';
 
 const STORAGE_KEYS = {
-  EMPLOYEES: 'workplan_employees',
+  EMPLOYEES: 'workplan_mitarbeiter',
   SHIFTS: 'workplan_shifts',
   WORKPLAN: 'workplan_entries',
-  STORES: 'stores',
+  STORES: 'filialen',
 };
 
 export const storage = {

@@ -7,13 +7,13 @@ import { format } from 'date-fns';
 interface ShiftAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (employeeId: string, shiftId: string, workingHours: number) => void;
+  onSave: (employeeId: string, shiftId: string, workHours: number) => void;
   employees: Employee[];
   shifts: WorkingShift[];
   date: Date;
   initialEmployeeId?: string;
   initialShiftId?: string;
-  initialWorkingHours?: number;
+  initialWorkHours?: number;
 }
 
 const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
@@ -25,20 +25,20 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   date,
   initialEmployeeId,
   initialShiftId,
-  initialWorkingHours = 8
+  initialWorkHours = 8
 }) => {
   const [selectedEmployee, setSelectedEmployee] = useState(initialEmployeeId || '');
   const [selectedShift, setSelectedShift] = useState(initialShiftId || '');
-  const [workingHours, setWorkingHours] = useState(initialWorkingHours);
+  const [workHours, setWorkHours] = useState(initialWorkHours);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
       setSelectedEmployee(initialEmployeeId || '');
       setSelectedShift(initialShiftId || '');
-      setWorkingHours(initialWorkingHours);
+      setWorkHours(initialWorkHours);
     }
-  }, [isOpen, initialEmployeeId, initialShiftId, initialWorkingHours]);
+  }, [isOpen, initialEmployeeId, initialShiftId, initialWorkHours]);
 
   const handleSave = () => {
     setError('');
@@ -50,7 +50,12 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
       setError('Bitte wählen Sie eine Schicht aus');
       return;
     }
-    onSave(selectedEmployee, selectedShift, workingHours);
+    if (workHours <= 0) {
+      setError('Bitte geben Sie gültige Arbeitsstunden ein');
+      return;
+    }
+    onSave(selectedEmployee, selectedShift, workHours);
+    onClose();
   };
 
   return (
@@ -147,21 +152,21 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                       </label>
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => setWorkingHours(Math.max(0, workingHours - 0.5))}
+                          onClick={() => setWorkHours(Math.max(0, workHours - 0.5))}
                           className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
                         >
                           -
                         </button>
                         <input
                           type="number"
-                          value={workingHours}
-                          onChange={(e) => setWorkingHours(Math.max(0, parseFloat(e.target.value) || 0))}
+                          value={workHours}
+                          onChange={(e) => setWorkHours(Math.max(0, parseFloat(e.target.value) || 0))}
                           step="0.5"
                           min="0"
                           className="block w-20 rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         <button
-                          onClick={() => setWorkingHours(workingHours + 0.5)}
+                          onClick={() => setWorkHours(workHours + 0.5)}
                           className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
                         >
                           +

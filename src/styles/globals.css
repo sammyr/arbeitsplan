@@ -1,0 +1,53 @@
+/* Basis-Styles */
+.mobile-menu-open {
+  overflow: hidden;
+}
+
+/* Overlay-Styles ohne Blur */
+.fixed.inset-0,
+[class*="modal-overlay"] {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: var(--z-modal-overlay) !important;
+  -webkit-backdrop-filter: blur(0px) !important;
+  backdrop-filter: blur(0px) !important;
+}
+
+/* Reset für alle möglichen Blur-Effekte */
+*[class*="fixed"],
+*[class*="modal"],
+*[class*="overlay"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Spezifische Überschreibungen für react-hot-toast */
+div[class*="fixed"][class*="inset-0"],
+div[class*="modal-overlay"],
+div[class*="backdrop"] {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Zusätzliche Spezifität für Toast-Overlays */
+:root [class*="fixed"][class*="inset-0"],
+:root [class*="modal-overlay"] {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Höchste Spezifität für problematische Elemente */
+html body div[class*="fixed"][class*="inset-0"],
+html body div[class*="modal-overlay"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

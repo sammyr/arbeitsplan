@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
 import { 
   BuildingOfficeIcon, 
   CalendarIcon, 
@@ -12,119 +11,146 @@ import {
   ChartBarIcon,
   ClipboardDocumentListIcon,
   QuestionMarkCircleIcon,
-  Bars3Icon,
-  XMarkIcon,
   HomeIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  UserCircleIcon,
+  ArrowRightOnRectangleIcon,
+  CalendarDaysIcon as CalendarDays,
+  UsersIcon as Users,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
-const navigation = [
-  { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Dashboard', href: '/dashboard', icon: ChartBarIcon },
-  { name: 'Arbeitsplan', href: '/arbeitsplan3', icon: CalendarIcon },
-  { name: 'Schichten', href: '/schichten2', icon: ClockIcon },
-  { name: 'Filialen', href: '/stores', icon: BuildingOfficeIcon },
-  { name: 'Mitarbeiter', href: '/employees', icon: UserGroupIcon },
-  { name: 'Auswertungen', href: '/auswertungen', icon: DocumentTextIcon },
-  { name: 'Logbuch', href: '/logbuch', icon: ClipboardDocumentListIcon },
-  { name: 'Einstellungen', href: '/settings', icon: CogIcon },
-  { name: 'Hilfe', href: '/help', icon: QuestionMarkCircleIcon },
-];
+interface SidebarProps {
+  onMobileMenuClose?: () => void;
+}
 
-export default function Sidebar() {
+const Sidebar = ({ onMobileMenuClose }: SidebarProps) => {
+  const { user, userRole, logout } = useAuth();
   const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const router = useRouter();
 
-  const NavigationLinks = () => (
-    <nav className="flex flex-1 flex-col">
-      <ul role="list" className="flex flex-1 flex-col gap-y-7">
-        <li>
-          <ul role="list" className="-mx-2 space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <li key={item.name}>
+  console.log('Sidebar Debug:', {
+    userExists: !!user,
+    userRole,
+    pathname
+  });
+
+  const adminMenuItems = [
+    { href: '/', label: 'Home', icon: HomeIcon },
+    { href: '/dashboard', label: 'Dashboard', icon: ChartBarIcon },
+    { href: '/arbeitsplan', label: 'Arbeitsplan', icon: CalendarIcon },
+    { href: '/arbeitsschichten', label: 'Schichten', icon: ClockIcon },
+    { href: '/filialen', label: 'Filialen', icon: BuildingOfficeIcon },
+    { href: '/mitarbeiter', label: 'Mitarbeiter', icon: UserGroupIcon },
+    { href: '/auswertungen', label: 'Auswertungen', icon: DocumentTextIcon },
+    { href: '/logbuch', label: 'Logbuch', icon: ClipboardDocumentListIcon },
+    { href: '/einstellungen', label: 'Einstellungen', icon: CogIcon },
+    { href: '/hilfe', label: 'Hilfe', icon: QuestionMarkCircleIcon },
+  ];
+
+  const employeeMenuItems = [
+    { href: '/arbeitsplan', label: 'Arbeitsplan', icon: CalendarIcon },
+  ];
+
+  const bottomMenuItems = [
+    { href: '/import', label: 'Import', icon: ArrowUpTrayIcon },
+    { href: '/profile', label: 'Profil', icon: UserCircleIcon },
+  ];
+
+  const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
+
+  console.log('Current user role:', userRole);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Successfully logged out');
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
+  };
+
+  return (
+    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6">
+      <div className="flex h-16 shrink-0 items-center">
+        <Link href="/" className="flex items-center">
+          <img
+            className="h-8 w-auto"
+            src="/logo.svg"
+            alt="Arbeitsplan Logo"
+          />
+        </Link>
+      </div>
+      <nav className="flex flex-1 flex-col">
+        <ul role="list" className="flex flex-1 flex-col gap-y-7">
+          <li>
+            <ul role="list" className="-mx-2 space-y-1">
+              {menuItems.map((item) => (
+                <li key={item.label}>
                   <Link
                     href={item.href}
                     className={`
-                      group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold mx-2 transition-all duration-200
-                      ${isActive
-                        ? 'bg-slate-200 text-slate-800 shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800 hover:shadow-sm'
-                      }
-                    `}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                      group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold
+                      ${pathname === item.href
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : 'text-gray-700 hover:text-emerald-600 hover:bg-emerald-50'
+                      }`}
+                    onClick={onMobileMenuClose}
                   >
                     <item.icon
                       className={`h-6 w-6 shrink-0 ${
-                        isActive ? 'text-slate-700' : 'text-slate-500 group-hover:text-slate-600'
+                        pathname === item.href ? 'text-emerald-600' : 'text-gray-400 group-hover:text-emerald-600'
                       }`}
                       aria-hidden="true"
                     />
-                    {item.name}
+                    {item.label}
                   </Link>
                 </li>
-              );
-            })}
-          </ul>
-        </li>
-      </ul>
-    </nav>
-  );
-
-  return (
-    <>
-      {/* Mobile menu */}
-      <div className="lg:hidden">
-        <button
-          type="button"
-          className="fixed top-4 left-4 z-40 p-2 rounded-lg bg-white shadow-md"
-          onClick={() => setIsMobileMenuOpen(true)}
-        >
-          <span className="sr-only">Open sidebar</span>
-          <Bars3Icon className="h-6 w-6 text-slate-600" aria-hidden="true" />
-        </button>
-
-        {/* Mobile menu overlay with slide animation */}
-        <div
-          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-            isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <div
-            className={`fixed inset-y-0 left-0 w-64 bg-white transform transition-transform duration-300 ease-in-out shadow-2xl ${
-              isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-          >
-            <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-6">
-              <h1 className="text-xl font-semibold text-slate-800">Arbeitsplan</h1>
-              <button
-                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
+              ))}
+            </ul>
+          </li>
+          <li className="mt-auto -mx-2 space-y-1">
+            {bottomMenuItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`
+                  group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold
+                  ${pathname === item.href
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : 'text-gray-700 hover:text-emerald-600 hover:bg-emerald-50'
+                  }`}
+                onClick={onMobileMenuClose}
               >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="px-4 py-4">
-              <NavigationLinks />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-slate-200 bg-gradient-to-b from-slate-50 via-slate-100/70 to-slate-100/50 px-6 shadow-xl">
-          <div className="flex h-16 shrink-0 items-center border-b border-slate-200/50">
-            <h1 className="text-xl font-semibold text-slate-700">Arbeitsplan</h1>
-          </div>
-          <NavigationLinks />
-        </div>
-      </div>
-    </>
+                <item.icon
+                  className={`h-6 w-6 shrink-0 ${
+                    pathname === item.href ? 'text-emerald-600' : 'text-gray-400 group-hover:text-emerald-600'
+                  }`}
+                  aria-hidden="true"
+                />
+                {item.label}
+              </Link>
+            ))}
+            <button
+              onClick={async () => {
+                if (onMobileMenuClose) onMobileMenuClose();
+                await handleLogout();
+              }}
+              className="flex w-full items-center gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-600"
+            >
+              <ArrowRightOnRectangleIcon className="h-6 w-6 shrink-0 text-gray-400" aria-hidden="true" />
+              Ausloggen
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
   );
 }
+
+export default Sidebar;

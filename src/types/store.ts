@@ -4,6 +4,7 @@ export interface Store {
   address: string;
   phone: string;
   email: string;
+  organizationId: string;
   createdAt: string;
   updatedAt: string;
 }

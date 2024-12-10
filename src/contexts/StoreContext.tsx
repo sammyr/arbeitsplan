@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Store } from '@/types/store';
 import { dbService } from '@/lib/db';
+import { useAuth } from './AuthContext';
 
 interface StoreContextType {
   stores: Store[];
@@ -18,18 +19,25 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadStores();
-  }, []);
+    if (user) {
+      loadStores();
+    } else {
+      setStores([]);
+    }
+  }, [user]);
 
   async function loadStores() {
+    if (!user) return;
+    
     try {
-      const storesData = await dbService.getStores();
+      const storesData = await dbService.getStores(user.uid);
       setStores(storesData);
       setError(null);
     } catch (err) {
@@ -42,7 +50,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   async function addStore(store: Omit<Store, 'id'>) {
     try {
-      const id = await dbService.addStore(store);
+      if (!user) {
+        throw new Error('Sie müssen angemeldet sein');
+      }
+      const id = await dbService.addStore({ ...store, organizationId: user.uid });
       const newStore = await dbService.getStore(id);
       if (newStore) {
         setStores(prev => [...prev, newStore]);
@@ -71,14 +82,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   async function deleteStore(id: string) {
     try {
+      console.log('StoreContext: Deleting store:', id);
       await dbService.deleteStore(id);
-      setStores(prev => prev.filter(store => store.id !== id));
+      
+      // Immediately update the local state
+      console.log('StoreContext: Updating local state...');
+      setStores(prev => {
+        const newStores = prev.filter(store => store.id !== id);
+        console.log('StoreContext: New stores state:', newStores);
+        return newStores;
+      });
+      
+      // Clear selected store if it was deleted
       if (selectedStore?.id === id) {
+        console.log('StoreContext: Clearing selected store');
         setSelectedStore(null);
       }
+      
+      console.log('StoreContext: Store deletion complete');
     } catch (err) {
+      console.error('StoreContext: Error deleting store:', err);
       setError('Failed to delete store');
-      console.error('Error deleting store:', err);
+      throw err;
     }
   }
 

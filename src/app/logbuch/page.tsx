@@ -56,7 +56,8 @@ const LogEntryRow: React.FC<LogEntryRowProps> = ({ entry }) => {
 
   let formattedTime = '-';
   try {
-    formattedTime = format(new Date(entry.timestamp), 'HH:mm', { locale: de });
+    const date = parseISO(entry.createdAt as string);
+    formattedTime = format(date, 'HH:mm', { locale: de });
   } catch (error) {
     console.error('Error formatting time:', error);
   }
@@ -78,7 +79,7 @@ const LogEntryRow: React.FC<LogEntryRowProps> = ({ entry }) => {
           </div>
           {entry.details && (
             <pre className={`mt-1 whitespace-pre-wrap text-sm ${colors.text} opacity-90`}>
-              {entry.details}
+              {typeof entry.details === 'string' ? entry.details : JSON.stringify(entry.details, null, 2)}
             </pre>
           )}
         </div>
@@ -136,11 +137,15 @@ export default function LogbuchPage() {
 
   const groupLogsByDate = (logs: LogEntry[]): GroupedLogs => {
     return logs.reduce((groups: GroupedLogs, log) => {
-      const date = format(parseISO(log.timestamp), 'yyyy-MM-dd');
-      if (!groups[date]) {
-        groups[date] = [];
+      try {
+        const date = format(parseISO(log.createdAt as string), 'yyyy-MM-dd');
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(log);
+      } catch (error) {
+        console.error('Error processing log entry:', error, log);
       }
-      groups[date].push(log);
       return groups;
     }, {});
   };

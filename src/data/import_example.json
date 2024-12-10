@@ -1,0 +1,165 @@
+{
+  "arbeitsplan_db": {
+    "employees": [
+      {
+        "firstName": "Silvia",
+        "lastName": "",
+        "email": "1@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer"
+      },
+      {
+        "firstName": "Maxi",
+        "lastName": "",
+        "email": "2@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer"
+      },
+      {
+        "firstName": "Cindy",
+        "lastName": "",
+        "email": "3@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer"
+      },
+      {
+        "firstName": "Peter",
+        "lastName": "",
+        "email": "4@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer"
+      },
+      {
+        "firstName": "Jenny",
+        "lastName": "",
+        "email": "5@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer"
+      },
+      {
+        "firstName": "Tobi",
+        "lastName": "",
+        "email": "6@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer"
+      },
+      {
+        "firstName": "Diana",
+        "lastName": "",
+        "email": "7@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer"
+      }
+    ],
+    "stores": [
+      {
+        "name": "Erkner",
+        "address": "Erkner Straße 1",
+        "phone": "+49000000000",
+        "email": "erkner@example.com"
+      },
+      {
+        "name": "Goßen",
+        "address": "Goßen Straße 1",
+        "phone": "+49000000000",
+        "email": "gossen@example.com"
+      }
+    ],
+    "workingShifts": [
+      {
+        "title": "Frühschicht",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "title": "Spätschicht",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      }
+    ],
+    "assignments": [
+      {
+        "employeeId": "1",
+        "shiftId": "1",
+        "date": "2024-12-03",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "3",
+        "shiftId": "1",
+        "date": "2024-12-20",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "5",
+        "shiftId": "1",
+        "date": "2024-12-25",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "4",
+        "shiftId": "1",
+        "date": "2024-12-14",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "7",
+        "shiftId": "1",
+        "date": "2024-12-16",
+        "startTime": "09:00",
+        "endTime": "18:00",
+        "workHours": 9
+      },
+      {
+        "employeeId": "3",
+        "shiftId": "1",
+        "date": "2024-12-04",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "2",
+        "shiftId": "1",
+        "date": "2024-12-20",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "5",
+        "shiftId": "2",
+        "date": "2024-12-17",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "3",
+        "shiftId": "1",
+        "date": "2024-12-08",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      },
+      {
+        "employeeId": "2",
+        "shiftId": "1",
+        "date": "2024-12-25",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8
+      }
+    ]
+  }
+}
