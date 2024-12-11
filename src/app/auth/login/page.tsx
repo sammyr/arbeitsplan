@@ -93,9 +93,9 @@ export default function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <Image
-            src="/logo.png"
+            src="/logo.svg"
             alt="Logo"
-            width={64}
+            width={464}
             height={64}
             className="mx-auto"
           />

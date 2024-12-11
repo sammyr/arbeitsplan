@@ -10,6 +10,7 @@ export interface WorkingShift {
   storeId: string;
   organizationId: string;
   color?: string;
+  excludeFromCalculations?: boolean;
   createdAt: string;
   updatedAt: string;
 }
