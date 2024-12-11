@@ -5,6 +5,7 @@ import { dbService } from '@/lib/db';
 import { Employee } from '@/types/employee';
 import { ShiftAssignment } from '@/types/shift-assignment';
 import { Store } from '@/types/store';
+import { WorkingShift } from '@/types/working-shift';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
@@ -21,6 +22,7 @@ export default function AuswertungenPage() {
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
+  const [shifts, setShifts] = useState<WorkingShift[]>([]);
   const [stores, setStores] = useState<Store[]>(() => {
     const savedStores = storage.getStores();
     return savedStores;
@@ -58,19 +60,22 @@ export default function AuswertungenPage() {
         userId: user.uid
       });
       
-      // Load employees and stores for the organization
-      const [loadedEmployees, loadedStores] = await Promise.all([
+      // Load employees, stores, and shifts for the organization
+      const [loadedEmployees, loadedStores, loadedShifts] = await Promise.all([
         dbService.getEmployeesByOrganization(user.uid),
-        dbService.getStores(user.uid)
+        dbService.getStores(user.uid),
+        dbService.getWorkingShiftsByOrganization(user.uid)
       ]);
 
       console.log('Loaded initial data:', {
         employees: loadedEmployees.length,
-        stores: loadedStores.length
+        stores: loadedStores.length,
+        shifts: loadedShifts.length
       });
 
       setStores(loadedStores);
       setEmployees(loadedEmployees);
+      setShifts(loadedShifts);
 
       // Load assignments for all stores
       const allAssignments: ShiftAssignment[] = [];
@@ -108,12 +113,16 @@ export default function AuswertungenPage() {
 
   const calculateHours = (employeeId: string, storeId: string) => {
     return assignments
-      .filter(assignment => 
-        assignment.employeeId === employeeId &&
-        assignment.storeId === storeId &&
-        new Date(assignment.date).getMonth() === selectedDate.getMonth() &&
-        new Date(assignment.date).getFullYear() === selectedDate.getFullYear()
-      )
+      .filter(assignment => {
+        const shift = shifts.find(s => s.id === assignment.shiftId);
+        return (
+          assignment.employeeId === employeeId &&
+          assignment.storeId === storeId &&
+          new Date(assignment.date).getMonth() === selectedDate.getMonth() &&
+          new Date(assignment.date).getFullYear() === selectedDate.getFullYear() &&
+          !shift?.excludeFromCalculations // Exclude shifts marked with excludeFromCalculations
+        );
+      })
       .reduce((total, assignment) => total + (assignment.workHours || 0), 0);
   };
 
@@ -124,10 +133,12 @@ export default function AuswertungenPage() {
     const filteredAssignments = assignments.filter(
       (assignment) => {
         const assignmentDate = new Date(assignment.date);
+        const shift = shifts.find(s => s.id === assignment.shiftId);
         return (
           assignment.employeeId === employeeId &&
           assignmentDate >= start &&
-          assignmentDate <= end
+          assignmentDate <= end &&
+          !shift?.excludeFromCalculations // Exclude shifts marked with excludeFromCalculations
         );
       }
     );

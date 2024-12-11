@@ -19,6 +19,7 @@ export interface WorkingShift {
   color?: string;
   createdAt: string;
   updatedAt: string;
+  excludeFromCalculations?: boolean;
 }
 
 export interface WorkplanEntry {

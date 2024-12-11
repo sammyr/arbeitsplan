@@ -513,7 +513,7 @@ const Arbeitsplan3Page = memo(() => {
                                               </button>
                                             </div>
                                             <div key={index} 
-                                              className="p-1.5 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm"
+                                              className={`p-1.5 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm`}
                                             >
                                               <div className="flex items-center gap-1">
                                                 <span className="font-semibold text-sm">
@@ -521,9 +521,11 @@ const Arbeitsplan3Page = memo(() => {
                                                 </span>
                                                 <span className="text-sm text-slate-500">({shift.title})</span>
                                               </div>
-                                              <div className="text-sm text-slate-600">
-                                                {assignment.workHours}h
-                                              </div>
+                                              {!shift.excludeFromCalculations && (
+                                                <div className="text-sm text-slate-600">
+                                                  {assignment.workHours}h
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         )}
@@ -901,10 +903,12 @@ const Arbeitsplan3Page = memo(() => {
     const employeeAssignments = assignments.filter(
       (assignment) => {
         const assignmentDate = new Date(assignment.date);
+        const shift = shifts.find(s => s.id === assignment.shiftId);
         return (
           assignment.employeeId === employeeId &&
           assignmentDate >= start &&
-          assignmentDate <= end
+          assignmentDate <= end &&
+          !shift?.excludeFromCalculations // Exclude shifts marked with excludeFromCalculations
         );
       }
     );

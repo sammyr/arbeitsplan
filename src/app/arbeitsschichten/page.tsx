@@ -13,6 +13,7 @@ export default function ArbeitsschichtenPage() {
   const [newShiftTitle, setNewShiftTitle] = useState('');
   const [editingShift, setEditingShift] = useState<WorkingShift | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [excludeFromCalculations, setExcludeFromCalculations] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,11 +42,13 @@ export default function ArbeitsschichtenPage() {
         organizationId: user.uid,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        excludeFromCalculations,
       };
 
       await addShift(newShift);
       toast.success('Schicht erfolgreich erstellt');
       setNewShiftTitle('');
+      setExcludeFromCalculations(false);
     } catch (error) {
       console.error('Error creating shift:', error);
       toast.error('Fehler beim Erstellen der Schicht');
@@ -57,6 +60,7 @@ export default function ArbeitsschichtenPage() {
   const handleEdit = (shift: WorkingShift) => {
     setEditingShift(shift);
     setNewShiftTitle(shift.title);
+    setExcludeFromCalculations(shift.excludeFromCalculations || false);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -74,12 +78,14 @@ export default function ArbeitsschichtenPage() {
       const updatedShift: Partial<WorkingShift> = {
         title: newShiftTitle.trim(),
         updatedAt: new Date().toISOString(),
+        excludeFromCalculations,
       };
 
       await updateShift(editingShift.id, updatedShift);
       toast.success('Schicht erfolgreich aktualisiert');
       setEditingShift(null);
       setNewShiftTitle('');
+      setExcludeFromCalculations(false);
     } catch (error) {
       console.error('Error updating shift:', error);
       toast.error('Fehler beim Aktualisieren der Schicht');
@@ -91,6 +97,7 @@ export default function ArbeitsschichtenPage() {
   const handleCancel = () => {
     setEditingShift(null);
     setNewShiftTitle('');
+    setExcludeFromCalculations(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -145,6 +152,20 @@ export default function ArbeitsschichtenPage() {
               disabled={isLoading}
             />
           </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="excludeFromCalculations"
+              checked={excludeFromCalculations}
+              onChange={(e) => setExcludeFromCalculations(e.target.checked)}
+              className="h-4 w-4 text-emerald-500 border-slate-300 rounded focus:ring-emerald-500"
+              disabled={isLoading}
+            />
+            <label htmlFor="excludeFromCalculations" className="ml-2 block text-sm text-slate-700">
+              Stunden nicht berechnen und im Kalender ausblenden
+            </label>
+          </div>
         </div>
 
         <div className="flex justify-end space-x-3 mt-6">
@@ -173,40 +194,55 @@ export default function ArbeitsschichtenPage() {
         </div>
       </div>
 
-      <div className="mt-16 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="mt-8">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" >
-                  Schicht
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Titel
                 </th>
-                <th scope="col" className="relative px-6 py-3">
-                  <span className="sr-only">Aktionen</span>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Erstellt am
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Aktionen
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {/* Debug log entfernt für Production Build */}
+            <tbody className="bg-white divide-y divide-slate-200">
               {shifts.map((shift) => (
-                <tr key={shift.id} className="hover:bg-slate-50 transition-all duration-200">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                <tr key={shift.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                     {shift.title}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {new Date(shift.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {shift.excludeFromCalculations ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Ausgeschlossen
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Aktiv
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => handleEdit(shift)}
-                      className="text-emerald-600 hover:text-emerald-900 mr-4 transition-colors duration-200"
-                      title="Bearbeiten"
-                      disabled={isLoading}
+                      className="text-emerald-600 hover:text-emerald-900 mr-4"
                     >
                       <MdEdit className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(shift.id)}
-                      className="text-red-600 hover:text-red-900 transition-colors duration-200"
-                      title="Löschen"
-                      disabled={isLoading}
+                      className="text-red-600 hover:text-red-900"
                     >
                       <MdDelete className="h-5 w-5" />
                     </button>
