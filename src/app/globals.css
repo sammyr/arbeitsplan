@@ -479,7 +479,7 @@ input:focus {
 }
 
 .pdf-export .text-base {
-  font-size: 14px !important;
+  font-size: 13px !important;
 }
 @media (min-width: 1024px) {
   .lg\:pl-\[280px\] {
