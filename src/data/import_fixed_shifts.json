@@ -1,0 +1,96 @@
+{
+  "arbeitsplan_db": {
+    "assignments": [
+      {
+        "employeeId": "10",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-01",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "6",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-01",
+        "workHours": 9,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "8",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-02",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "8",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-03",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "10",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-04",
+        "workHours": 8,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "9",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-04",
+        "workHours": 8,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "10",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-05",
+        "workHours": 8,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "9",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-05",
+        "workHours": 8,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "8",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-06",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "8",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-07",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      }
+    ]
+  }
+}

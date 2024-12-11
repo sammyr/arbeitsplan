@@ -16,6 +16,7 @@ interface EmployeeFormData {
   mobilePhone: string;
   role?: string;
   storeId?: string;
+  birthday?: string;
 }
 
 export default function EmployeesPage() {
@@ -27,6 +28,7 @@ export default function EmployeesPage() {
     lastName: '',
     email: '',
     mobilePhone: '',
+    birthday: '',
   });
 
   const { user } = useAuth();
@@ -94,7 +96,6 @@ export default function EmployeesPage() {
           ...employeeData,
           organizationId: user.uid,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
         });
         setEmployees(prev => [...prev, newEmployee]);
         toast.success('Mitarbeiter erfolgreich erstellt');
@@ -105,6 +106,7 @@ export default function EmployeesPage() {
         lastName: '',
         email: '',
         mobilePhone: '',
+        birthday: '',
       });
       setEditingEmployee(null);
     } catch (error) {
@@ -125,6 +127,7 @@ export default function EmployeesPage() {
       lastName: employee.lastName,
       email: employee.email,
       mobilePhone: employee.mobilePhone,
+      birthday: employee.birthday,
     });
   };
 
@@ -207,12 +210,16 @@ export default function EmployeesPage() {
           </div>
         </div>
 
-        {/* Formular */}
+        {/* Form Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6 sm:mb-8">
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <h2 className="text-2xl font-semibold text-slate-800 mb-6">
+            {editingEmployee ? 'Mitarbeiter bearbeiten' : 'Mitarbeiter hinzufügen'}
+          </h2>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="firstName" className="block text-base font-medium text-slate-700 mb-2">
                   Vorname
                 </label>
                 <input
@@ -221,16 +228,16 @@ export default function EmployeesPage() {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  required
-                  placeholder="z.B. Max"
+                  placeholder="Vorname des Mitarbeiters"
                   className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                  focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                  transition-colors duration-200"
+                    focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                    transition-colors duration-200"
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="lastName" className="block text-base font-medium text-slate-700 mb-2">
                   Nachname
                 </label>
                 <input
@@ -239,16 +246,16 @@ export default function EmployeesPage() {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  required
-                  placeholder="z.B. Mustermann"
+                  placeholder="Nachname des Mitarbeiters"
                   className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                  focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                  transition-colors duration-200"
+                    focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                    transition-colors duration-200"
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="email" className="block text-base font-medium text-slate-700 mb-2">
                   E-Mail
                 </label>
                 <input
@@ -257,17 +264,17 @@ export default function EmployeesPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  required
-                  placeholder="z.B. max.mustermann@firma.de"
+                  placeholder="E-Mail-Adresse"
                   className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                  focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                  transition-colors duration-200"
+                    focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                    transition-colors duration-200"
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label htmlFor="mobilePhone" className="block text-sm font-medium text-slate-700">
-                  Telefon
+                <label htmlFor="mobilePhone" className="block text-base font-medium text-slate-700 mb-2">
+                  Mobiltelefon
                 </label>
                 <input
                   type="tel"
@@ -275,16 +282,33 @@ export default function EmployeesPage() {
                   name="mobilePhone"
                   value={formData.mobilePhone}
                   onChange={handleInputChange}
-                  required
-                  placeholder="z.B. +49 123 45678900"
+                  placeholder="Mobiltelefonnummer"
                   className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                  focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                  transition-colors duration-200"
+                    focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                    transition-colors duration-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="birthday" className="block text-base font-medium text-slate-700 mb-2">
+                  Geburtstag
+                </label>
+                <input
+                  type="date"
+                  id="birthday"
+                  name="birthday"
+                  value={formData.birthday}
+                  onChange={handleInputChange}
+                  className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                    focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                    transition-colors duration-200"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 mt-6">
               {editingEmployee && (
                 <button
                   type="button"
@@ -295,29 +319,25 @@ export default function EmployeesPage() {
                       lastName: '',
                       email: '',
                       mobilePhone: '',
+                      birthday: '',
                     });
                   }}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
+                  className="px-6 py-2.5 text-base font-medium rounded-lg border border-slate-300 
+                    text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 
+                    focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
+                  disabled={isSubmitting}
                 >
                   Abbrechen
                 </button>
               )}
               <button
                 type="submit"
+                className="px-6 py-2.5 text-base font-medium rounded-lg border border-transparent 
+                  text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 
+                  focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
                 disabled={isSubmitting}
-                className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
               >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Wird gespeichert...
-                  </>
-                ) : (
-                  editingEmployee ? 'Aktualisieren' : 'Mitarbeiter hinzufügen'
-                )}
+                {isSubmitting ? 'Speichert...' : editingEmployee ? 'Aktualisieren' : 'Hinzufügen'}
               </button>
             </div>
           </form>
@@ -326,56 +346,63 @@ export default function EmployeesPage() {
         {/* Mitarbeiterliste */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    E-Mail
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Telefon
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Aktionen
-                  </th>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kontakt</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Geburtstag</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktionen</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {employees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-slate-50 transition-colors duration-150">
+                  <tr key={employee.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-900">
+                      <div className="text-sm font-medium text-gray-900">
                         {employee.firstName} {employee.lastName}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-600">{employee.email}</div>
+                      <div className="text-sm">
+                        <a href={`mailto:${employee.email}`} className="text-emerald-600 hover:text-emerald-800">
+                          {employee.email}
+                        </a>
+                      </div>
+                      <div className="text-sm">
+                        <a href={`tel:${employee.mobilePhone}`} className="text-emerald-600 hover:text-emerald-800">
+                          {employee.mobilePhone}
+                        </a>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-600">{employee.mobilePhone}</div>
+                      <div className="text-sm text-gray-900">
+                        {employee.birthday ? new Date(employee.birthday).toLocaleDateString('de-DE', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                        }) : '-'}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-3">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex space-x-3">
                         <button
                           onClick={() => handleEdit(employee)}
-                          className="text-emerald-600 hover:text-emerald-900 transition-colors duration-150"
+                          className="text-emerald-600 hover:text-emerald-800"
                         >
-                          Bearbeiten
-                        </button>
-                        <button
-                          onClick={() => handleSendInvite(employee)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors duration-150"
-                        >
-                          Einladen
+                          <MdEdit className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => handleKillEmployee(employee.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors duration-150"
+                          className="text-emerald-600 hover:text-emerald-800"
                         >
-                          Löschen
+                          <MdDelete className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleSendInvite(employee)}
+                          className="text-emerald-600 hover:text-emerald-800"
+                        >
+                          Einladen
                         </button>
                       </div>
                     </td>

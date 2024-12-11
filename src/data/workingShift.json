@@ -1,0 +1,19 @@
+{
+  "workingShifts": [
+    {
+      "id": "a5f86f02-9619-43aa-8c33-6eb3026c19c2",
+      "title": "F",
+      "startTime": "09:00",
+      "endTime": "17:00",
+      "employeeId": null,
+      "shiftId": null,
+      "storeId": null,
+      "workHours": 8,
+      "date": "2024-12-05",
+      "createdAt": "2024-12-05T15:44:59.719Z",
+      "updatedAt": "2024-12-05T16:20:10.940Z",
+      "organizationId": null,
+      "color": "#4CAF50"
+    }
+  ]
+}

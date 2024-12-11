@@ -1,0 +1,158 @@
+{
+  "arbeitsplan_db": {
+    "mitarbeiter": [
+      {
+        "id": "1",
+        "firstName": "Employee1",
+        "lastName": "",
+        "email": "1@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#4CAF50",
+        "createdAt": "2024-12-10T17:43:27+01:00",
+        "updatedAt": "2024-12-10T17:43:27+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "id": "2",
+        "firstName": "Employee2",
+        "lastName": "",
+        "email": "2@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#2196F3",
+        "createdAt": "2024-12-10T17:43:27+01:00",
+        "updatedAt": "2024-12-10T17:43:27+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "id": "3",
+        "firstName": "Antje",
+        "lastName": "",
+        "email": "10@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#4CAF50",
+        "createdAt": "2024-12-10T17:43:27+01:00",
+        "updatedAt": "2024-12-10T17:43:27+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "id": "4",
+        "firstName": "Diana",
+        "lastName": "",
+        "email": "8@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#2196F3",
+        "createdAt": "2024-12-10T17:43:27+01:00",
+        "updatedAt": "2024-12-10T17:43:27+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "id": "5",
+        "firstName": "Employee3",
+        "lastName": "",
+        "email": "3@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#4CAF50",
+        "createdAt": "2024-12-10T17:43:27+01:00",
+        "updatedAt": "2024-12-10T17:43:27+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "id": "6",
+        "firstName": "Tobi",
+        "lastName": "",
+        "email": "6@example.com",
+        "mobilePhone": "+49000000000",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#2196F3",
+        "createdAt": "2024-12-10T17:43:27+01:00",
+        "updatedAt": "2024-12-10T17:43:27+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      }
+    ],
+    "stores": [
+      {
+        "id": "1",
+        "name": "Erkner",
+        "address": "Erkner Straße 1",
+        "phone": "+49000000000",
+        "email": "store@example.com",
+        "createdAt": "2024-12-10T16:29:22+01:00",
+        "updatedAt": "2024-12-10T16:29:22+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "id": "2",
+        "name": "Goßen",
+        "address": "Goßen Straße 1",
+        "phone": "+49000000000",
+        "email": "store@example.com",
+        "createdAt": "2024-12-10T16:29:22+01:00",
+        "updatedAt": "2024-12-10T16:29:22+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      }
+    ],
+    "workingShifts": [
+      {
+        "id": "1",
+        "title": "F",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8,
+        "color": "#4CAF50",
+        "createdAt": "2024-12-10T16:11:02+01:00",
+        "updatedAt": "2024-12-10T16:11:02+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "id": "2",
+        "title": "S",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8,
+        "color": "#2196F3",
+        "createdAt": "2024-12-10T16:11:02+01:00",
+        "updatedAt": "2024-12-10T16:11:02+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      }
+    ],
+    "assignments": [
+      {
+        "employeeId": "1",
+        "shiftId": "1",
+        "storeId": "1",
+        "date": "2024-12-01",
+        "workHours": 7,
+        "status": "active",
+        "notes": null,
+        "id": "assign_1",
+        "createdAt": "2024-12-10T16:44:35+01:00",
+        "updatedAt": "2024-12-10T16:44:35+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      },
+      {
+        "employeeId": "2",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2024-12-02",
+        "workHours": 8,
+        "status": "active",
+        "notes": null,
+        "id": "assign_2",
+        "createdAt": "2024-12-10T16:44:35+01:00",
+        "updatedAt": "2024-12-10T16:44:35+01:00",
+        "organizationId": "5oOH8wT5ArOt67VnWZGx4OoJtXw1"
+      }
+    ]
+  }
+}

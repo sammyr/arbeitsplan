@@ -4,7 +4,7 @@ export interface LogEntry {
   id: string;
   type: LogType;
   message: string;
-  details?: string;
+  details?: any;
   createdAt: string | Date;
   userId?: string;
 }

@@ -1,0 +1,17 @@
+{
+  "assignments": [
+    {
+      "id": "f29ad016-7473-4df5-a54c-cd6eede497dd",
+      "employeeId": 3,
+      "shiftId": "a5f86f02-9619-43aa-8c33-6eb3026c19c2",
+      "storeId": 2,
+      "date": "2024-12-01",
+      "workHours": 7,
+      "createdAt": "2024-12-05T15:46:08.994Z",
+      "updatedAt": "2024-12-05T15:46:08.994Z",
+      "organizationId": null,
+      "status": "active",
+      "notes": null
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "assignments": [
+    {
+      "id": "f29ad016-7473-4df5-a54c-cd6eede497d1",
+      "employeeId": 10,
+      "shiftId": "a5f86f02-9619-43aa-8c33-6eb3026c19c2",
+      "storeId": 2,
+      "date": "2025-01-01",
+      "workHours": 8.5,
+      "createdAt": "2024-12-10T16:17:21.000Z",
+      "updatedAt": "2024-12-10T16:17:21.000Z",
+      "organizationId": null,
+      "status": "active",
+      "notes": null
+    },
+    {
+      "id": "f29ad016-7473-4df5-a54c-cd6eede497d2",
+      "employeeId": 6,
+      "shiftId": "a5f86f02-9619-43aa-8c33-6eb3026c19c2",
+      "storeId": 2,
+      "date": "2025-01-01",
+      "workHours": 9,
+      "createdAt": "2024-12-10T16:17:21.000Z",
+      "updatedAt": "2024-12-10T16:17:21.000Z",
+      "organizationId": null,
+      "status": "active",
+      "notes": null
+    },
+    {
+      "id": "f29ad016-7473-4df5-a54c-cd6eede497d3",
+      "employeeId": 8,
+      "shiftId": "a5f86f02-9619-43aa-8c33-6eb3026c19c2",
+      "storeId": 2,
+      "date": "2025-01-02",
+      "workHours": 8.5,
+      "createdAt": "2024-12-10T16:17:21.000Z",
+      "updatedAt": "2024-12-10T16:17:21.000Z",
+      "organizationId": null,
+      "status": "active",
+      "notes": null
+    }
+  ]
+}

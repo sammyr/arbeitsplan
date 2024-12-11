@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { StoreProvider } from '@/contexts/StoreContext'
 import { ShiftProvider } from '@/contexts/ShiftContext'
+import { LogProvider } from '@/contexts/LogContext'
 import { Toaster } from 'react-hot-toast'
 import MainLayout from '@/components/MainLayout'
 
@@ -28,14 +29,16 @@ export default function RootLayout({
     <html lang="de">
       <body className={inter.className}>
         <AuthProvider>
-          <StoreProvider>
-            <ShiftProvider>
-              <MainLayout>
-                {children}
-              </MainLayout>
-            </ShiftProvider>
-          </StoreProvider>
-          <Toaster />
+          <LogProvider>
+            <StoreProvider>
+              <ShiftProvider>
+                <Toaster position="top-right" />
+                <MainLayout>
+                  {children}
+                </MainLayout>
+              </ShiftProvider>
+            </StoreProvider>
+          </LogProvider>
         </AuthProvider>
       </body>
     </html>

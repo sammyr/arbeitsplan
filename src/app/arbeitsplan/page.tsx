@@ -17,6 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
 import { collection, query, where, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useLog } from '@/contexts/LogContext';
+import './styles.css';
 
 // Funktion zum Laden der Store-Daten
 const loadStoreData = async (
@@ -150,6 +152,7 @@ const Arbeitsplan3Page = memo(() => {
 
   const { user, userRole } = useAuth();
   const isEmployee = userRole === 'user';
+  const { addLog } = useLog();
 
   // Get all months that have assignments
   useEffect(() => {
@@ -227,81 +230,58 @@ const Arbeitsplan3Page = memo(() => {
     };
   }, []);
 
-  // Initialisiere den Store und lade die Daten
+  // Optimized loadData function
+  const loadData = async () => {
+    if (!user?.uid) {
+      console.log('No user ID available');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      console.log('Loading data for user:', user.uid);
+
+      // Load all data in parallel using Promise.all
+      const [stores, employeesData, shiftsData, assignmentsData] = await Promise.all([
+        dbService.getStores(user.uid),
+        dbService.getEmployeesByOrganization(user.uid),
+        dbService.getWorkingShiftsByOrganization(user.uid),
+        selectedStore ? dbService.getAssignments(selectedStore.id) : Promise.resolve([])
+      ]);
+
+      console.log('Loaded data:', {
+        stores: stores.length,
+        employees: employeesData.length,
+        shifts: shiftsData.length,
+        assignments: assignmentsData.length
+      });
+
+      // Update all states at once to minimize re-renders
+      setStores(stores);
+      setEmployees(employeesData);
+      setShifts(userRole === 'user' ? shiftsData.filter(shift => shift.employeeId === user.uid) : shiftsData);
+      setAssignments(assignmentsData);
+      
+      // Handle store selection
+      if (stores.length > 0) {
+        const savedStoreId = localStorage.getItem('selectedStoreId');
+        const savedStore = savedStoreId ? stores.find(s => s.id === savedStoreId) : null;
+        const storeToSelect = savedStore || stores[0];
+        setSelectedStore(storeToSelect);
+        
+        // Cache the selected store
+        localStorage.setItem('selectedStoreId', storeToSelect.id);
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Fehler beim Laden der Daten');
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const initializeData = async () => {
-      try {
-        // Lade gespeicherte Store-ID
-        const savedStoreId = typeof window !== 'undefined' ? localStorage.getItem('selectedStoreId') : null;
-        const initialStore = savedStoreId 
-          ? null // Temporär auf null setzen, bis wir die Stores laden
-          : null;
-        
-        setStores([]); // initialStores
-        setSelectedStore(null);
-
-        // Lade gespeichertes Datum
-        const savedDate = typeof window !== 'undefined' ? localStorage.getItem('arbeitsplan3_currentDate') : null;
-        if (savedDate) {
-          setCurrentDate(new Date(savedDate));
-        }
-      } catch (error) {
-        console.error('Error initializing data:', error);
-      }
-    };
-
-    initializeData();
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user?.uid) {
-        console.log('No user ID available');
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        console.log('Loading data for user:', user.uid);
-
-        // Lade Stores der Organisation
-        const stores = await dbService.getStores(user.uid);
-        console.log('Loaded stores:', stores.length);
-        setStores(stores);
-        
-        if (stores.length > 0) {
-          // Versuche den gespeicherten Store zu laden
-          const savedStoreId = localStorage.getItem('selectedStoreId');
-          const savedStore = savedStoreId ? stores.find(s => s.id === savedStoreId) : null;
-          setSelectedStore(savedStore || stores[0]); // Nutze den gespeicherten Store oder den ersten verfügbaren
-        }
-
-        // Lade Mitarbeiter und Schichten
-        const [employeesData, shiftsData] = await Promise.all([
-          dbService.getEmployeesByOrganization(user.uid),
-          dbService.getWorkingShiftsByOrganization(user.uid)
-        ]);
-
-        console.log('Loaded employees:', employeesData.length);
-        console.log('Loaded shifts:', shiftsData.length);
-
-        setEmployees(employeesData);
-        setShifts(shiftsData);
-        
-        // Wenn der eingeloggte Benutzer ein Mitarbeiter ist, zeige nur seine Schichten
-        if (userRole === 'user') {
-          const userShifts = shiftsData.filter(shift => shift.employeeId === user.uid);
-          setShifts(userShifts);
-        }
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error('Fehler beim Laden der Daten');
-        setIsLoading(false);
-      }
-    };
-
     loadData();
   }, [user, userRole]);
 
@@ -482,7 +462,7 @@ const Arbeitsplan3Page = memo(() => {
                                 onClick={() => handleDateClick(day)}
                               >
                                 <div className="text-right text-sm text-gray-500">
-                                  {format(day, 'd')}
+                                  <span className="text-md  font-semibold ">{format(day, 'd')}</span>
                                 </div>
                                 <div className="mt-2 space-y-1">
                                   {dayAssignments.map((assignment, index) => {
@@ -512,10 +492,10 @@ const Arbeitsplan3Page = memo(() => {
                                                   setSelectedDate(day);
                                                   setIsModalOpen(true);
                                                 }}
-                                                className="ml-1 p-0.5 text-slate-500 hover:text-slate-700 rounded transition-colors bg-white shadow-sm"
+                                                className="p-1 text-slate-500 hover:text-slate-700 rounded transition-colors bg-white shadow-sm"
                                                 title="Schicht bearbeiten"
                                               >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
                                               </button>
@@ -524,25 +504,25 @@ const Arbeitsplan3Page = memo(() => {
                                                   e.stopPropagation();
                                                   handleDeleteAssignment(assignment.id);
                                                 }}
-                                                className="ml-1 p-0.5 text-slate-500 hover:text-slate-700 rounded transition-colors bg-white shadow-sm"
+                                                className="ml-1 p-1 text-slate-500 hover:text-slate-700 rounded transition-colors bg-white shadow-sm"
                                                 title="Schicht löschen"
                                               >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
                                               </button>
                                             </div>
-                                            <div className="p-2 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm">
-                                              <div className="flex flex-col items-center text-center space-y-0.5">
+                                            <div key={index} 
+                                              className="p-1.5 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm"
+                                            >
+                                              <div className="flex items-center gap-1">
                                                 <span className="font-semibold text-sm">
                                                   {employee.firstName}
                                                 </span>
-                                                <span className="text-sm text-slate-700">
-                                                  {shift.title}
-                                                </span>
-                                                <span className="text-sm text-slate-600">
-                                                  {assignment.workHours} Stunden
-                                                </span>
+                                                <span className="text-sm text-slate-500">({shift.title})</span>
+                                              </div>
+                                              <div className="text-sm text-slate-600">
+                                                {assignment.workHours}h
                                               </div>
                                             </div>
                                           </div>
@@ -603,16 +583,16 @@ const Arbeitsplan3Page = memo(() => {
         const employee = employees.find(e => e.id === employeeId);
         const shift = shifts.find(s => s.id === shiftId);
 
-        await dbService.addLogEntry(
+        addLog(
           'success',
-          `Schicht bearbeitet`,
-          {
+          'Schicht bearbeitet',
+          JSON.stringify({
             mitarbeiter: employee?.firstName || 'Unbekannt',
             schicht: shift?.title || 'Unbekannt',
             stunden: workHours,
             datum: format(new Date(assignmentUpdate.date), 'dd.MM.yyyy'),
             filiale: selectedStore.name
-          }
+          })
         );
 
         toast.success('Schicht wurde erfolgreich bearbeitet');
@@ -637,16 +617,16 @@ const Arbeitsplan3Page = memo(() => {
         const employee = employees.find(e => e.id === employeeId);
         const shift = shifts.find(s => s.id === shiftId);
         
-        await dbService.addLogEntry(
+        addLog(
           'success',
-          `Neue Schicht zugewiesen`,
-          {
+          'Neue Schicht zugewiesen',
+          JSON.stringify({
             mitarbeiter: employee?.firstName || 'Unbekannt',
             schicht: shift?.title || 'Unbekannt',
             stunden: workHours,
             datum: format(selectedDate, 'dd.MM.yyyy'),
             filiale: selectedStore.name
-          }
+          })
         );
         
         toast.success('Schicht erfolgreich zugewiesen');
@@ -655,7 +635,7 @@ const Arbeitsplan3Page = memo(() => {
       setEditingAssignment(null);
     } catch (error) {
       console.error('Error saving assignment:', error);
-      await dbService.addLogEntry('error', editingAssignment ? 'Fehler beim Bearbeiten der Schicht' : 'Fehler beim Zuweisen der Schicht');
+      addLog('error', editingAssignment ? 'Fehler beim Bearbeiten der Schicht' : 'Fehler beim Zuweisen der Schicht');
       toast.error(editingAssignment ? 'Fehler beim Bearbeiten der Schicht' : 'Fehler beim Speichern der Zuweisung');
     }
   };
@@ -683,21 +663,21 @@ const Arbeitsplan3Page = memo(() => {
       setAssignments(prev => prev.filter(a => a.id !== assignmentId));
       
       // Erstelle einen Log-Eintrag für die Löschung
-      await dbService.addLogEntry(
+      addLog(
         'info',
-        `Schicht gelöscht`,
-        {
+        'Schicht gelöscht',
+        JSON.stringify({
           mitarbeiter: employee?.firstName || 'Unbekannt',
           schicht: shift?.title || 'Unbekannt',
           datum: format(new Date(assignment.date), 'dd.MM.yyyy'),
           filiale: selectedStore?.name || 'Unbekannt'
-        }
+        })
       );
       
       toast.success('Schicht wurde gelöscht');
     } catch (error) {
       console.error('Error deleting assignment:', error);
-      await dbService.addLogEntry('error', 'Fehler beim Löschen der Schicht');
+      addLog('error', 'Fehler beim Löschen der Schicht');
       toast.error('Fehler beim Löschen der Schicht');
     }
   };
@@ -757,23 +737,23 @@ const Arbeitsplan3Page = memo(() => {
       const shift = shifts.find(s => s.id === assignment.shiftId);
       
       // Erstelle einen Log-Eintrag für die Verschiebung
-      await dbService.addLogEntry(
+      addLog(
         'info',
-        `Schicht verschoben`,
-        {
+        'Schicht verschoben',
+        JSON.stringify({
           mitarbeiter: employee?.firstName || 'Unbekannt',
           schicht: shift?.title || 'Unbekannt',
           von: format(new Date(source.droppableId), 'dd.MM.yyyy'),
           nach: format(new Date(destination.droppableId), 'dd.MM.yyyy'),
           filiale: selectedStore.name
-        }
+        })
       );
       
       console.log('Database update successful');
       toast.success('Schicht wurde verschoben');
     } catch (error) {
       console.error('Error updating assignment:', error);
-      await dbService.addLogEntry('error', 'Fehler beim Verschieben der Schicht');
+      addLog('error', 'Fehler beim Verschieben der Schicht');
       toast.error('Fehler beim Verschieben der Schicht');
       
       // Nur im Fehlerfall die Daten neu laden
@@ -961,67 +941,6 @@ const Arbeitsplan3Page = memo(() => {
     );
   };
 
-  const fetchAssignments = async () => {
-    if (!selectedStore?.id || !user?.uid) return;
-
-    const assignmentsRef = collection(db, 'users', user.uid, 'assignments');
-    const q = query(
-      assignmentsRef,
-      where('storeId', '==', selectedStore.id),
-      where('date', '>=', startOfMonth(currentDate)),
-      where('date', '<=', endOfMonth(currentDate))
-    );
-
-    const querySnapshot = await getDocs(q);
-    const assignments: ShiftAssignment[] = [];
-    querySnapshot.forEach((doc) => {
-      assignments.push({ id: doc.id, ...doc.data() } as ShiftAssignment);
-    });
-
-    setAssignments(assignments);
-  };
-
-  const handleAssignmentChange = async (employeeId: string, date: Date, shift: string | null) => {
-    if (!selectedStore?.id || !user?.uid) return;
-
-    const assignmentDate = startOfDay(date).toISOString();
-    const assignmentRef = doc(db, 'users', user.uid, 'assignments', `${employeeId}_${assignmentDate}`);
-
-    if (shift) {
-      await setDoc(assignmentRef, {
-        employeeId,
-        date: assignmentDate,
-        shift,
-        storeId: selectedStore.id,
-        organizationId: user.uid,
-        updatedAt: new Date().toISOString()
-      });
-    } else {
-      await deleteDoc(assignmentRef);
-    }
-
-    await fetchAssignments();
-  };
-
-  const handleAddShift = async (shiftData: any) => {
-    try {
-      // Füge die Organisation zum Schicht-Datensatz hinzu
-      const newShift = {
-        ...shiftData,
-        organizationId: user?.uid,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      const addedShift = await dbService.addShift(newShift);
-      setShifts(prev => [...prev, addedShift]);
-      toast.success('Schicht wurde hinzugefügt');
-    } catch (error) {
-      console.error('Error adding shift:', error);
-      toast.error('Fehler beim Hinzufügen der Schicht');
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="p-4 md:p-6 max-w-[1920px] mx-auto">
@@ -1059,7 +978,7 @@ const Arbeitsplan3Page = memo(() => {
                         }}
                         className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                       >
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                       </button>
@@ -1091,7 +1010,7 @@ const Arbeitsplan3Page = memo(() => {
                         }}
                         className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                       >
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
@@ -1179,7 +1098,9 @@ const Arbeitsplan3Page = memo(() => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {employees.map((employee) => {
+                        {employees
+                          .filter(employee => calculateEmployeeHours(employee.id) > 0)
+                          .map((employee) => {
                           const totalHours = calculateEmployeeHours(employee.id);
                           return (
                             <tr key={employee.id} className="hover:bg-gray-50">

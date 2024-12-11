@@ -70,7 +70,17 @@ export const exportCalendarToPDF = async (
       format: 'a4'
     });
 
-    // Capture calendar view
+    // Add title
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    const title = `Arbeitsplan ${store.name} - ${format(currentDate, 'MMMM yyyy', { locale: de })}`;
+    const titleWidth = pdf.getStringUnitWidth(title) * pdf.getFontSize() / pdf.internal.scaleFactor;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    pdf.text(title, (pageWidth - titleWidth) / 2, 20);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(12);
+
+    // Capture calendar view with proper margins
     console.log('Capturing calendar view...');
     const canvas = await html2canvas(calendarElement, {
       scale: 1.5,
@@ -94,40 +104,37 @@ export const exportCalendarToPDF = async (
     const imgWidth = canvas.width;
     const imgHeight = canvas.height;
     
-    // Calculate the maximum width and height that will fit on the page
-    const maxWidth = pdfWidth - 20;
-    const maxHeight = pdfHeight - 20;
+    // Calculate the maximum width and height that will fit on the page with margins
+    const marginX = 15; // 15mm margins on left and right
+    const marginY = 25; // 25mm margin on top (for title) and bottom
+    const maxWidth = pdfWidth - (2 * marginX);
+    const maxHeight = pdfHeight - (2 * marginY);
     
     // Calculate the scale ratio while maintaining aspect ratio
-    const widthRatio = maxWidth / imgWidth;
-    const heightRatio = maxHeight / imgHeight;
-    const ratio = Math.min(widthRatio, heightRatio);
-    
-    // Calculate the centered position
+    let ratio = Math.min(
+      maxWidth / imgWidth,
+      maxHeight / imgHeight
+    );
+
+    // Scale the image dimensions
     const scaledWidth = imgWidth * ratio;
     const scaledHeight = imgHeight * ratio;
+
+    // Center the image on the page
     const imgX = (pdfWidth - scaledWidth) / 2;
-    const imgY = (pdfHeight - scaledHeight) / 2;
+    const imgY = marginY;
 
     console.log('Adding calendar to PDF with dimensions:', {
       pdfWidth,
       pdfHeight,
-      imgWidth,
-      imgHeight,
       scaledWidth,
       scaledHeight,
       imgX,
-      imgY
+      imgY,
+      ratio
     });
 
-    pdf.addImage(
-      imgData,
-      'PNG',
-      imgX,
-      imgY,
-      scaledWidth,
-      scaledHeight
-    );
+    pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
 
     // Add new page for hours table
     console.log('Creating hours table...');

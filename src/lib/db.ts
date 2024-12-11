@@ -5,6 +5,8 @@ import type { Employee } from '@/types/employee';
 import type { Shift } from '@/types/shift';
 import type { ShiftAssignment } from '@/types/shift-assignment';
 import type { WorkingShift } from '@/types/working-shift';
+import { localStorageService } from './localStorageService'; // Import localStorageService
+import type { LogType } from '@/types/log'; // Import LogType
 
 const dbService = {
   // Reset database
@@ -77,14 +79,19 @@ const dbService = {
     }
   },
 
-  async addStore(store: Omit<Store, 'id'>): Promise<string> {
+  async addStore(store: Omit<Store, 'id'>): Promise<Store> {
     try {
       const docRef = await addDoc(collection(db, 'stores'), {
         ...store,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
-      return docRef.id;
+      return {
+        ...store,
+        id: docRef.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
     } catch (error) {
       console.error('Error adding store:', error);
       throw error;
@@ -185,30 +192,16 @@ const dbService = {
 
   async addEmployee(employee: Omit<Employee, 'id'>): Promise<Employee> {
     try {
-      console.log('Adding employee:', employee);
-      
-      if (!employee.organizationId) {
-        throw new Error('organizationId is required when adding an employee');
-      }
-
-      // Ensure all required fields are present
-      const employeeData = {
-        firstName: employee.firstName || '',
-        lastName: employee.lastName || '',
-        email: employee.email || '',
-        mobilePhone: employee.mobilePhone || '',
-        role: employee.role || 'employee',
-        organizationId: employee.organizationId,
+      const docRef = await addDoc(collection(db, 'mitarbeiter'), {
+        ...employee,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
-
-      const docRef = await addDoc(collection(db, 'mitarbeiter'), employeeData);
-      console.log('Added employee with ID:', docRef.id);
-      
-      return { 
+      });
+      return {
+        ...employee,
         id: docRef.id,
-        ...employeeData
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
     } catch (error) {
       console.error('Error adding employee:', error);
@@ -317,46 +310,15 @@ const dbService = {
 
   // Log operations
   async getLogEntries(): Promise<any[]> {
-    try {
-      const logsRef = collection(db, 'logs');
-      const querySnapshot = await getDocs(logsRef);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
-        };
-      });
-    } catch (error) {
-      console.error('Error getting log entries:', error);
-      throw error;
-    }
+    return localStorageService.getLogs();
   },
 
   async clearLogs(): Promise<void> {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'logs'));
-      const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
-      await Promise.all(deletePromises);
-    } catch (error) {
-      console.error('Error clearing logs:', error);
-      throw error;
-    }
+    localStorageService.clearLogs();
   },
 
-  async addLogEntry(type: string, message: string, details?: any): Promise<void> {
-    try {
-      await addDoc(collection(db, 'logs'), {
-        type,
-        message,
-        details,
-        createdAt: new Date()
-      });
-    } catch (error) {
-      console.error('Error adding log entry:', error);
-      throw error;
-    }
+  async addLogEntry(type: LogType, message: string, details?: any): Promise<void> {
+    localStorageService.addLog(type, message, details);
   },
 
   // Shift operations
@@ -450,14 +412,13 @@ const dbService = {
     }
   },
 
-  async addWorkingShift(shift: Omit<WorkingShift, 'id'>): Promise<string> {
+  async addWorkingShift(shift: Omit<WorkingShift, 'id'>): Promise<WorkingShift> {
     try {
-      const docRef = await addDoc(collection(db, 'workingShifts'), {
+      const docRef = await addDoc(collection(db, 'workingShifts'), shift);
+      return {
         ...shift,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      return docRef.id;
+        id: docRef.id
+      };
     } catch (error) {
       console.error('Error adding working shift:', error);
       throw error;
@@ -719,7 +680,6 @@ const dbService = {
     }
   },
 
-  // Deprecated: Use getAllAssignmentsByOrganization instead
   async getAssignmentsByOrganization(organizationId: string | undefined): Promise<ShiftAssignment[]> {
     if (!organizationId) return [];
     

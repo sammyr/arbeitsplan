@@ -1,0 +1,51 @@
+{
+  "arbeitsplan_db": {
+    "assignments": [
+      {
+        "employeeId": "9",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-01",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "6",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-01",
+        "workHours": 9,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "7",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-02",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "6",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-02",
+        "workHours": 9,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "7",
+        "shiftId": "1",
+        "storeId": "2",
+        "date": "2025-01-03",
+        "workHours": 8.5,
+        "status": "active",
+        "notes": null
+      }
+    ]
+  }
+}

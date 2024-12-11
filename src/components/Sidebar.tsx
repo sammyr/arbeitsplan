@@ -17,7 +17,8 @@ import {
   ArrowRightOnRectangleIcon,
   CalendarDaysIcon as CalendarDays,
   UsersIcon as Users,
-  ArrowUpTrayIcon
+  ArrowUpTrayIcon,
+  CakeIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -45,6 +46,7 @@ const Sidebar = ({ onMobileMenuClose }: SidebarProps) => {
     { href: '/arbeitsschichten', label: 'Schichten', icon: ClockIcon },
     { href: '/filialen', label: 'Filialen', icon: BuildingOfficeIcon },
     { href: '/mitarbeiter', label: 'Mitarbeiter', icon: UserGroupIcon },
+    { href: '/geburtstage', label: 'Geburtstage', icon: CakeIcon },
     { href: '/auswertungen', label: 'Auswertungen', icon: DocumentTextIcon },
     { href: '/logbuch', label: 'Logbuch', icon: ClipboardDocumentListIcon },
     { href: '/einstellungen', label: 'Einstellungen', icon: CogIcon },

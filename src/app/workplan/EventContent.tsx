@@ -108,17 +108,17 @@ const EventContent: React.FC<EventContentProps> = ({
       <div className="absolute top-0 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 rounded px-1 shadow-sm z-[60]">
         <button
           onClick={handleEditClick}
-          className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
+          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
           title="Schicht bearbeiten"
         >
-          <FaEdit size={14} />
+          <FaEdit size={16} />
         </button>
         <button
           onClick={handleDelete}
-          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
           title="Schicht löschen"
         >
-          <FaTrash size={14} />
+          <FaTrash size={16} />
         </button>
       </div>
 
@@ -147,7 +147,7 @@ const EventContent: React.FC<EventContentProps> = ({
                   <div className="border rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
                     {employees.map((emp) => (
                       <div
-                        key={emp.id}
+                        key={emp.id.toString()}
                         className={`cursor-pointer p-3 hover:bg-blue-50 text-gray-700 transition-colors ${
                           emp.id === employee?.id ? 'bg-blue-50 font-medium' : ''
                         }`}
@@ -166,7 +166,7 @@ const EventContent: React.FC<EventContentProps> = ({
                   <div className="border rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
                     {availableShifts.map((ws) => (
                       <div
-                        key={ws.id}
+                        key={ws.id.toString()}
                         className={`cursor-pointer p-3 hover:bg-blue-50 text-gray-700 transition-colors ${
                           ws.id === shift?.shiftId ? 'bg-blue-50 font-medium' : ''
                         }`}

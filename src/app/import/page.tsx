@@ -130,8 +130,8 @@ export default function ImportPage() {
 
       // Importiere Mitarbeiter
       if (Array.isArray(importData.arbeitsplan_db.mitarbeiter)) {
-        for (const [index, employee] of importData.arbeitsplan_db.mitarbeiter.entries()) {
-          const employeeRef = doc(collection(db, 'mitarbeiter'));
+        for (const employee of importData.arbeitsplan_db.mitarbeiter) {
+          const employeeRef = doc(db, 'mitarbeiter', employee.id);
           const employeeData = {
             firstName: employee.firstName || '',
             lastName: employee.lastName || '',
@@ -145,16 +145,16 @@ export default function ImportPage() {
             updatedAt: serverTimestamp()
           };
           batch.set(employeeRef, employeeData);
-          employeeIdMap.set(String(index + 1), employeeRef.id);
+          employeeIdMap.set(employee.id, employee.id);  // Behalte die originale ID
           importCount++;
         }
       }
 
       // Importiere Filialen
       if (Array.isArray(importData.arbeitsplan_db.stores)) {
-        for (const [index, store] of importData.arbeitsplan_db.stores.entries()) {
-          const storeRef = doc(collection(db, 'stores'));
-          batch.set(storeRef, {
+        for (const store of importData.arbeitsplan_db.stores) {
+          const storeRef = doc(db, 'stores', store.id);
+          const storeData = {
             name: store.name || '',
             address: store.address || '',
             phone: store.phone || '',
@@ -162,17 +162,18 @@ export default function ImportPage() {
             organizationId: user.uid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
-          });
-          storeIdMap.set(String(index + 1), storeRef.id);
+          };
+          batch.set(storeRef, storeData);
+          storeIdMap.set(store.id, store.id);  // Behalte die originale ID
           importCount++;
         }
       }
 
       // Importiere Schichten
       if (Array.isArray(importData.arbeitsplan_db.workingShifts)) {
-        for (const [index, shift] of importData.arbeitsplan_db.workingShifts.entries()) {
-          const shiftRef = doc(collection(db, 'workingShifts'));
-          batch.set(shiftRef, {
+        for (const shift of importData.arbeitsplan_db.workingShifts) {
+          const shiftRef = doc(db, 'workingShifts', shift.id);
+          const shiftData = {
             title: shift.title || '',  
             startTime: shift.startTime || '',
             endTime: shift.endTime || '',
@@ -181,8 +182,9 @@ export default function ImportPage() {
             organizationId: user.uid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
-          });
-          shiftIdMap.set(String(index + 1), shiftRef.id);
+          };
+          batch.set(shiftRef, shiftData);
+          shiftIdMap.set(shift.id, shift.id);  // Behalte die originale ID
           importCount++;
         }
       }

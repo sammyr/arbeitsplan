@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { dbService } from '@/lib/db';
+import { localStorageService } from '@/lib/localStorageService';
 import { LogEntry, LogType } from '@/types/log';
 import { 
   CheckCircleIcon, 
@@ -50,39 +50,25 @@ const LogEntryRow: React.FC<LogEntryRowProps> = ({ entry }) => {
   const type: LogType = Object.keys(LogTypeColors).includes(entry.type) 
     ? entry.type as LogType 
     : 'info';
-  
-  const colors = LogTypeColors[type];
-  const Icon = LogTypeIcons[type];
 
-  let formattedTime = '-';
-  try {
-    const date = parseISO(entry.createdAt as string);
-    formattedTime = format(date, 'HH:mm', { locale: de });
-  } catch (error) {
-    console.error('Error formatting time:', error);
-  }
+  const Icon = LogTypeIcons[type];
+  const colors = LogTypeColors[type];
 
   return (
-    <div className={`py-2 ${colors.bg}`}>
-      <div className="flex items-start px-4">
-        <div className="flex-shrink-0 pt-1">
-          <Icon className={`h-5 w-5 ${colors.icon}`} />
-        </div>
-        <div className="ml-3 flex-1">
-          <div className="flex items-center justify-between">
-            <p className={`text-sm font-medium ${colors.text}`}>
-              {entry.message}
-            </p>
-            <span className={`ml-2 text-sm ${colors.text} opacity-75`}>
-              {formattedTime}
-            </span>
-          </div>
-          {entry.details && (
-            <pre className={`mt-1 whitespace-pre-wrap text-sm ${colors.text} opacity-90`}>
-              {typeof entry.details === 'string' ? entry.details : JSON.stringify(entry.details, null, 2)}
-            </pre>
-          )}
-        </div>
+    <div className={`flex items-start gap-4 p-4 rounded-lg ${colors.bg}`}>
+      <Icon className={`w-5 h-5 mt-0.5 ${colors.icon}`} />
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${colors.text}`}>
+          {entry.message}
+        </p>
+        {entry.details && (
+          <p className={`mt-1 text-sm ${colors.text} opacity-90`}>
+            {typeof entry.details === 'string' ? entry.details : JSON.stringify(entry.details)}
+          </p>
+        )}
+        <p className={`mt-1 text-xs ${colors.text} opacity-75`}>
+          {format(typeof entry.createdAt === 'string' ? parseISO(entry.createdAt) : entry.createdAt, 'HH:mm')}
+        </p>
       </div>
     </div>
   );
@@ -101,7 +87,7 @@ export default function LogbuchPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const logs = await dbService.getLogEntries();
+      const logs = localStorageService.getLogs();
       const validatedLogs = logs.map(log => ({
         ...log,
         type: Object.keys(LogTypeColors).includes(log.type) ? log.type : 'info'
@@ -124,8 +110,8 @@ export default function LogbuchPage() {
     try {
       setIsLoading(true);
       setError(null);
-      await dbService.clearLogs();
-      await dbService.addLogEntry('info', 'Logbuch gelöscht', 'Alle Logbuch-Einträge wurden gelöscht');
+      localStorageService.clearLogs();
+      localStorageService.addLog('info', 'Logbuch gelöscht', 'Alle Logbuch-Einträge wurden gelöscht');
       await fetchLogs();
     } catch (error) {
       console.error('Error clearing logs:', error);
@@ -143,10 +129,11 @@ export default function LogbuchPage() {
           groups[date] = [];
         }
         groups[date].push(log);
+        return groups;
       } catch (error) {
-        console.error('Error processing log entry:', error, log);
+        console.error('Error grouping log:', error);
+        return groups;
       }
-      return groups;
     }, {});
   };
 
@@ -154,67 +141,53 @@ export default function LogbuchPage() {
     fetchLogs();
   }, []);
 
+  const groupedLogs = groupLogsByDate(logEntries);
+  const sortedDates = Object.keys(groupedLogs).sort((a, b) => b.localeCompare(a));
+
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-slate-600">Lade Logbuch-Einträge...</div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
-  const groupedLogs = groupLogsByDate(logEntries);
-  const dates = Object.keys(groupedLogs).sort().reverse();
-
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Logbuch</h1>
-            <p className="text-slate-600">
-              Übersicht aller Systemaktivitäten und Änderungen.
-            </p>
-          </div>
-          {logEntries.length > 0 && (
-            <button
-              onClick={handleClearLogs}
-              className="px-4 py-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors duration-200"
-            >
-              Logbuch löschen
-            </button>
-          )}
-        </div>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-semibold text-slate-800">Logbuch</h1>
+        <button
+          onClick={handleClearLogs}
+          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+        >
+          Logbuch leeren
+        </button>
       </div>
-      
-      {error ? (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700">
+
+      {error && (
+        <div className="mb-8 p-4 rounded-lg bg-rose-50 text-rose-700">
           {error}
         </div>
+      )}
+
+      {sortedDates.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-slate-500">Keine Logbuch-Einträge vorhanden.</p>
+        </div>
       ) : (
-        <div className="space-y-6">
-          {dates.length > 0 ? (
-            dates.map(date => {
-              const formattedDate = format(parseISO(date), 'EEEE, d. MMMM yyyy', { locale: de });
-              return (
-                <div key={date} className="space-y-1">
-                  <h2 className="text-lg font-semibold text-slate-900 mb-2">
-                    {formattedDate}
-                  </h2>
-                  <div className="bg-white rounded-lg shadow-sm divide-y divide-slate-100">
-                    {groupedLogs[date].map(entry => (
-                      <LogEntryRow key={entry.id} entry={entry} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-8 text-slate-500">
-              Keine Logbuch-Einträge vorhanden
+        <div className="space-y-8">
+          {sortedDates.map(date => (
+            <div key={date}>
+              <h2 className="mb-4 text-sm font-medium text-slate-500">
+                {format(parseISO(date), 'EEEE, d. MMMM yyyy', { locale: de })}
+              </h2>
+              <div className="space-y-2">
+                {groupedLogs[date].map(entry => (
+                  <LogEntryRow key={entry.id} entry={entry} />
+                ))}
+              </div>
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>

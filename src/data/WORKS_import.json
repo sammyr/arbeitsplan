@@ -1,0 +1,98 @@
+{
+  "arbeitsplan_db": {
+    "mitarbeiter": [
+      {
+        "id": "1",
+        "firstName": "Silvia",
+        "lastName": "",
+        "email": "silvia@example.com",
+        "mobilePhone": "+49015257440668",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#4CAF50"
+      },
+      {
+        "id": "2",
+        "firstName": "Maxi",
+        "lastName": "",
+        "email": "140@example.com",
+        "mobilePhone": "+4901795477965",
+        "role": "Verkäufer",
+        "workHours": 40,
+        "color": "#2196F3"
+      }
+    ],
+    "stores": [
+      {
+        "id": "1",
+        "name": "Erkner",
+        "address": "Erkner Straße 1",
+        "phone": "+49000000000",
+        "email": "store@example.com"
+      },
+      {
+        "id": "2",
+        "name": "Goßen",
+        "address": "Goßen Straße 1",
+        "phone": "+49000000000",
+        "email": "store@example.com"
+      }
+    ],
+    "workingShifts": [
+      {
+        "id": "1",
+        "title": "F",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8,
+        "color": "#4CAF50"
+      },
+      {
+        "id": "2",
+        "title": "S",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "workHours": 8,
+        "color": "#2196F3"
+      }
+    ],
+    "assignments": [
+      {
+        "employeeId": "1",
+        "shiftId": "1",
+        "storeId": "1",
+        "date": "2024-12-01",
+        "workHours": 7,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "1",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2024-12-02",
+        "workHours": 8,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "2",
+        "shiftId": "1",
+        "storeId": "1",
+        "date": "2025-01-02",
+        "workHours": 8,
+        "status": "active",
+        "notes": null
+      },
+      {
+        "employeeId": "1",
+        "shiftId": "2",
+        "storeId": "2",
+        "date": "2025-01-03",
+        "workHours": 8,
+        "status": "active",
+        "notes": null
+      }
+    ]
+  }
+}

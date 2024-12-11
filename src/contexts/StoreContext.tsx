@@ -53,11 +53,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (!user) {
         throw new Error('Sie müssen angemeldet sein');
       }
-      const id = await dbService.addStore({ ...store, organizationId: user.uid });
-      const newStore = await dbService.getStore(id);
-      if (newStore) {
-        setStores(prev => [...prev, newStore]);
-      }
+      const newStore = await dbService.addStore({ ...store, organizationId: user.uid });
+      setStores(prev => [...prev, newStore]);
     } catch (err) {
       setError('Failed to add store');
       console.error('Error adding store:', err);

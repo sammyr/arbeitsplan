@@ -88,8 +88,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 
   const addShift = async (shiftData: Omit<WorkingShift, 'id'>) => {
     try {
-      const shiftId = await dbService.addWorkingShift(shiftData);
-      const newShift = { ...shiftData, id: shiftId };
+      const newShift = await dbService.addWorkingShift(shiftData);
       setShifts(prev => [...prev, newShift]);
       setError(null);
     } catch (err) {
