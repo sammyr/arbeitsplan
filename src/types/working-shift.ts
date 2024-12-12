@@ -11,6 +11,7 @@ export interface WorkingShift {
   organizationId: string;
   color?: string;
   excludeFromCalculations?: boolean;
+  priority?: number; // Neue Eigenschaft für die Sortierung der Schichten
   createdAt: string;
   updatedAt: string;
 }

@@ -13,6 +13,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import ShiftAssignmentModal from '@/components/ShiftAssignmentModal';
 import { exportCalendarToPDF } from '@/utils/pdfUtils';
+import { exportToExcel, printCalendar } from '@/utils/exportUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
 import { collection, query, where, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
@@ -426,14 +427,14 @@ const Arbeitsplan3Page = memo(() => {
                 <col style={{ width: '14.285%' }} />
               </colgroup>
               <thead>
-                <tr>
-                  <th className="bg-white p-2 text-center font-medium">Mo</th>
-                  <th className="bg-white p-2 text-center font-medium">Di</th>
-                  <th className="bg-white p-2 text-center font-medium">Mi</th>
-                  <th className="bg-white p-2 text-center font-medium">Do</th>
-                  <th className="bg-white p-2 text-center font-medium">Fr</th>
-                  <th className="bg-white p-2 text-center font-medium">Sa</th>
-                  <th className="bg-white p-2 text-center font-medium">So</th>
+                <tr className="bg-slate-50">
+                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Mo</th>
+                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Di</th>
+                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Mi</th>
+                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Do</th>
+                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Fr</th>
+                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Sa</th>
+                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">So</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,7 +446,7 @@ const Arbeitsplan3Page = memo(() => {
                           return (
                             <td 
                               key={`empty-${weekIndex}-${dayIndex}`} 
-                              className="bg-slate-100 p-2 align-top border border-slate-200"
+                              className="bg-slate-100 px-4 py-3 align-top border border-slate-200"
                               style={{ 
                                 height: '120px',
                                 minHeight: '120px'
@@ -458,18 +459,21 @@ const Arbeitsplan3Page = memo(() => {
                         const dayAssignments = assignments
                           .filter(a => format(new Date(a.date), 'yyyy-MM-dd') === dateStr)
                           .sort((a, b) => {
-                            const shiftA = shifts.find(s => s.id === a.shiftId)?.title || '';
-                            const shiftB = shifts.find(s => s.id === b.shiftId)?.title || '';
+                            const shiftA = shifts.find(s => s.id === a.shiftId);
+                            const shiftB = shifts.find(s => s.id === b.shiftId);
                             
-                            // Funktion zur Bestimmung der Schichtpriorität
-                            const getShiftPriority = (title: string) => {
-                              if (title === 'F' || title.startsWith('Früh')) return 1;
-                              if (title === 'Z' || title.startsWith('Zwischen')) return 2;
-                              if (title === 'S' || title.startsWith('Spät')) return 3;
-                              return 4; // Alle anderen Schichten
-                            };
+                            // Sortiere nach Priorität (falls vorhanden) oder Titel
+                            const priorityA = shiftA?.priority ?? Number.MAX_VALUE;
+                            const priorityB = shiftB?.priority ?? Number.MAX_VALUE;
                             
-                            return getShiftPriority(shiftA) - getShiftPriority(shiftB);
+                            if (priorityA !== priorityB) {
+                              return priorityA - priorityB;
+                            }
+                            
+                            // Falls keine Priorität gesetzt ist oder gleich, sortiere nach Titel
+                            const titleA = shiftA?.title || '';
+                            const titleB = shiftB?.title || '';
+                            return titleA.localeCompare(titleB);
                           });
 
                         return (
@@ -478,7 +482,7 @@ const Arbeitsplan3Page = memo(() => {
                               <td
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                className={`p-2 align-top relative hover:bg-gray-50 transition-colors cursor-pointer border border-slate-200 ${
+                                className={`px-4 py-3 align-top relative hover:bg-gray-50 transition-colors cursor-pointer border border-slate-200 ${
                                   !isSameMonth(day, currentDate) ? 'bg-slate-100' : 'bg-white'
                                 } ${
                                   isToday(day) ? 'bg-blue-50' : ''
@@ -489,10 +493,10 @@ const Arbeitsplan3Page = memo(() => {
                                 }}
                                 onClick={() => handleDateClick(day)}
                               >
-                                <div className="text-right text-sm text-gray-500">
-                                  <span className="text-md  font-semibold ">{format(day, 'd')}</span>
+                                <div className="text-right text-sm text-gray-500 mb-2">
+                                  <span className="text-md font-semibold">{format(day, 'd')}</span>
                                 </div>
-                                <div className="mt-2 space-y-1">
+                                <div className="space-y-1">
                                   {dayAssignments.map((assignment, index) => {
                                     const employee = employees.find(e => e.id === assignment.employeeId);
                                     const shift = shifts.find(s => s.id === assignment.shiftId);
@@ -795,132 +799,63 @@ const Arbeitsplan3Page = memo(() => {
 
   const handleExportPDF = async () => {
     if (!selectedStore) {
-      toast.error('Bitte wählen Sie einen Store aus');
+      toast.error('Bitte wählen Sie zuerst einen Store aus');
       return;
     }
 
-    const calendarElement = document.getElementById('calendar-container');
-    
-    // Debug log all assignments
-    console.log('Current date for filtering:', {
-      date: currentDate,
-      month: currentDate.getMonth(),
-      year: currentDate.getFullYear(),
-      isoString: currentDate.toISOString()
-    });
-
-    console.log('All assignments before filtering:', assignments.map(a => ({
-      id: a.id,
-      date: a.date,
-      employeeId: a.employeeId,
-      employee: a.employee?.firstName,
-      workHours: a.workHours,
-      parsedDate: new Date(a.date),
-      isCurrentMonth: new Date(a.date).getMonth() === currentDate.getMonth() &&
-                     new Date(a.date).getFullYear() === currentDate.getFullYear()
-    })));
-
-    // Make sure we have assignments with employee data
-    const assignmentsWithEmployees = assignments.filter(a => {
-      // Parse the assignment date
-      const assignmentDate = new Date(a.date + 'T00:00:00'); // Ensure consistent timezone handling
-      const assignmentMonth = assignmentDate.getMonth();
-      const assignmentYear = assignmentDate.getFullYear();
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-      
-      // Check if date is valid
-      if (isNaN(assignmentDate.getTime())) {
-        console.log('❌ Invalid date for assignment:', {
-          id: a.id,
-          date: a.date,
-          parsedDate: assignmentDate
-        });
-        return false;
-      }
-
-      // Make sure we have the employee data
-      if (!a.employee || !a.employeeId) {
-        console.log('❌ Assignment missing employee data:', {
-          id: a.id,
-          employeeId: a.employeeId,
-          employee: a.employee
-        });
-        return false;
-      }
-
-      // Check if assignment is in current month/year
-      const isCurrentMonth = assignmentMonth === currentMonth && assignmentYear === currentYear;
-      if (!isCurrentMonth) {
-        console.log('❌ Assignment not in current month:', {
-          id: a.id,
-          date: a.date,
-          parsedDate: assignmentDate.toISOString(),
-          assignmentMonth,
-          currentMonth,
-          assignmentYear,
-          currentYear
-        });
-        return false;
-      }
-
-      // Check work hours
-      if (typeof a.workHours !== 'number' || a.workHours <= 0) {
-        console.log('❌ Assignment missing work hours:', {
-          id: a.id,
-          workHours: a.workHours
-        });
-        return false;
-      }
-
-      console.log('✅ Valid assignment found:', {
-        id: a.id,
-        date: a.date,
-        parsedDate: assignmentDate.toISOString(),
-        employee: `${a.employee.firstName} ${a.employee.lastName || ''}`,
-        workHours: a.workHours,
-        month: {
-          assignment: assignmentMonth,
-          current: currentMonth
-        },
-        year: {
-          assignment: assignmentYear,
-          current: currentYear
-        }
-      });
-
-      return true;
-    });
-
-    console.log('Filtered assignments for export:', {
-      total: assignmentsWithEmployees.length,
-      currentMonth: format(currentDate, 'MMMM yyyy'),
-      store: selectedStore.name,
-      assignments: assignmentsWithEmployees.map(a => ({
-        id: a.id,
-        date: a.date,
-        parsedDate: new Date(a.date + 'T00:00:00').toISOString(),
-        employee: a.employee?.firstName,
-        workHours: a.workHours
-      }))
-    });
-
-    if (assignmentsWithEmployees.length === 0) {
-      console.log('No valid assignments found for the current month');
-      toast.error('Keine Schichten für diesen Monat gefunden');
-      return;
+    try {
+      await exportCalendarToPDF(
+        assignments,
+        employees,
+        shifts,
+        currentDate,
+        selectedStore.name
+      );
+      toast.success('PDF wurde erfolgreich erstellt');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Fehler beim Erstellen der PDF');
     }
-
-    await exportCalendarToPDF(calendarElement, selectedStore, currentDate, assignmentsWithEmployees);
   };
 
   const handleExcelExport = () => {
-    toast.success('Excel Export wird vorbereitet...');
-    // TODO: Implementiere Excel Export
+    if (!selectedStore) {
+      toast.error('Bitte wählen Sie zuerst einen Store aus');
+      return;
+    }
+
+    try {
+      exportToExcel(
+        assignments,
+        employees,
+        shifts,
+        currentDate,
+        selectedStore.name
+      );
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error('Fehler beim Excel-Export');
+    }
   };
 
   const handlePrint = () => {
-    toast.success('Drucken wird vorbereitet...');
+    if (!selectedStore) {
+      toast.error('Bitte wählen Sie zuerst einen Store aus');
+      return;
+    }
+
+    try {
+      printCalendar(
+        assignments,
+        employees,
+        shifts,
+        currentDate,
+        selectedStore.name
+      );
+    } catch (error) {
+      console.error('Error printing:', error);
+      toast.error('Fehler beim Drucken');
+    }
   };
 
   // Berechne die Gesamtstunden pro Mitarbeiter für den aktuellen Monat
@@ -1072,7 +1007,7 @@ const Arbeitsplan3Page = memo(() => {
                             className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm"
                           >
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2m8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             PDF Export
                           </button>
@@ -1090,7 +1025,6 @@ const Arbeitsplan3Page = memo(() => {
                           <button
                             onClick={handlePrint}
                             className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm"
-                            title="Drucken ist momentan nicht verfügbar"
                           >
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2m8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -1110,53 +1044,45 @@ const Arbeitsplan3Page = memo(() => {
               </div>
 
               {/* Übersichtstabelle */}
-              <div className="bg-white rounded-xl shadow-sm mt-6">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg font-medium leading-6 text-gray-900">
-                    Arbeitsstunden Übersicht
-                  </h3>
-                </div>
-                <div className="border-t border-gray-200">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Mitarbeiter
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Stunden
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {employees
-                          .filter(employee => calculateEmployeeHours(employee.id) > 0)
-                          .map((employee) => {
-                          const totalHours = calculateEmployeeHours(employee.id);
-                          return (
-                            <tr key={employee.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {employee.firstName} {employee.lastName}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                {totalHours.toFixed(1)} Stunden
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        <tr className="bg-gray-50 font-medium">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            Gesamt
+              <div className="mt-8">
+                <h2 className="text-xl font-semibold mb-4">Arbeitsstunden Übersicht</h2>
+                <table className="min-w-full border-separate border-spacing-0">
+                  <thead>
+                    <tr>
+                      <th className="text-left bg-gray-50 px-4 py-2 border-b border-gray-200 text-gray-500 uppercase tracking-wider font-medium text-sm">
+                        Mitarbeiter
+                      </th>
+                      <th className="text-right bg-gray-50 px-4 py-2 border-b border-gray-200 text-gray-500 uppercase tracking-wider font-medium text-sm">
+                        Stunden
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees
+                      .filter(employee => calculateEmployeeHours(employee.id) > 0)
+                      .map((employee) => {
+                      const totalHours = calculateEmployeeHours(employee.id);
+                      return (
+                        <tr key={employee.id}>
+                          <td className="px-4 py-2 border-b border-gray-200">
+                            {employee.firstName} {employee.lastName}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                            {calculateTotalHours().toFixed(1)} Stunden
+                          <td className="px-4 py-2 border-b border-gray-200 text-right">
+                            {totalHours.toFixed(1)} Stunden
                           </td>
                         </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                      );
+                    })}
+                    <tr>
+                      <td className="px-4 py-2 border-b border-gray-200 font-medium">
+                        Gesamt
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-200 text-right font-medium">
+                        {calculateTotalHours().toFixed(1)} Stunden
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 

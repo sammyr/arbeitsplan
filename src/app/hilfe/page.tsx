@@ -19,7 +19,7 @@ export default function HelpPage() {
           />
         </div>
         <h1 className="text-3xl font-bold mb-2">Arbeitsplan Manager</h1>
-        <span className="text-sm text-gray-500 mb-6">Version 0.52 (Beta)</span>
+        <span className="text-sm text-gray-500 mb-6">Version 0.53 (Beta)</span>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
@@ -69,6 +69,26 @@ export default function HelpPage() {
             Changelog
           </h2>
           <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
+              <h3 className="text-lg font-medium text-slate-800">Version 0.53 (Dezember 2024)</h3>
+              <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
+                <li>Export-Funktionen:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>PDF-Export im DIN A4 Querformat mit übersichtlicher Schichtdarstellung</li>
+                    <li>Verbessertes Excel-Export Design mit professionellem Layout</li>
+                    <li>Optimierte Druckfunktion mit angepasster Vorschau</li>
+                  </ul>
+                </li>
+                <li>Verbesserungen:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Schichten werden in allen Exporten übersichtlich untereinander angezeigt</li>
+                    <li>Automatische Berechnung und Anzeige der Gesamtstunden</li>
+                    <li>Farbliche Hervorhebung der Wochenenden in allen Exporten</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
               <h3 className="text-lg font-medium text-slate-800">Version 0.52 (Dezember 2024)</h3>
               <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">

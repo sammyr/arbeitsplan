@@ -14,6 +14,7 @@ export default function ArbeitsschichtenPage() {
   const [editingShift, setEditingShift] = useState<WorkingShift | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [excludeFromCalculations, setExcludeFromCalculations] = useState(false);
+  const [priority, setPriority] = useState<number>(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,12 +44,14 @@ export default function ArbeitsschichtenPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         excludeFromCalculations,
+        priority: priority || undefined,
       };
 
       await addShift(newShift);
       toast.success('Schicht erfolgreich erstellt');
       setNewShiftTitle('');
       setExcludeFromCalculations(false);
+      setPriority(0);
     } catch (error) {
       console.error('Error creating shift:', error);
       toast.error('Fehler beim Erstellen der Schicht');
@@ -61,6 +64,7 @@ export default function ArbeitsschichtenPage() {
     setEditingShift(shift);
     setNewShiftTitle(shift.title);
     setExcludeFromCalculations(shift.excludeFromCalculations || false);
+    setPriority(shift.priority || 0);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -79,6 +83,7 @@ export default function ArbeitsschichtenPage() {
         title: newShiftTitle.trim(),
         updatedAt: new Date().toISOString(),
         excludeFromCalculations,
+        priority: priority || undefined,
       };
 
       await updateShift(editingShift.id, updatedShift);
@@ -86,6 +91,7 @@ export default function ArbeitsschichtenPage() {
       setEditingShift(null);
       setNewShiftTitle('');
       setExcludeFromCalculations(false);
+      setPriority(0);
     } catch (error) {
       console.error('Error updating shift:', error);
       toast.error('Fehler beim Aktualisieren der Schicht');
@@ -98,6 +104,7 @@ export default function ArbeitsschichtenPage() {
     setEditingShift(null);
     setNewShiftTitle('');
     setExcludeFromCalculations(false);
+    setPriority(0);
   };
 
   const handleDelete = async (id: string) => {
@@ -153,6 +160,26 @@ export default function ArbeitsschichtenPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-base font-medium text-slate-700 mb-2">
+              Schichtpriorität
+            </label>
+            <input
+              type="number"
+              value={priority}
+              onChange={(e) => setPriority(Number(e.target.value))}
+              min="0"
+              className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                transition-colors duration-200"
+              placeholder="z.B. 1 für höchste Priorität"
+              disabled={isLoading}
+            />
+            <p className="mt-1 text-sm text-slate-500">
+              Bestimmt die Reihenfolge der Anzeige im Kalender. Niedrigere Zahlen werden zuerst angezeigt.
+            </p>
+          </div>
+
           <div className="flex items-center">
             <input
               type="checkbox"
@@ -194,63 +221,77 @@ export default function ArbeitsschichtenPage() {
         </div>
       </div>
 
-      <div className="mt-8">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Titel
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Erstellt am
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Aktionen
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {shifts.map((shift) => (
-                <tr key={shift.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                    {shift.title}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {new Date(shift.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {shift.excludeFromCalculations ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Ausgeschlossen
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Aktiv
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(shift)}
-                      className="text-emerald-600 hover:text-emerald-900 mr-4"
-                    >
-                      <MdEdit className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(shift.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <MdDelete className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="mt-8 flow-root">
+        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+              <table className="min-w-full divide-y divide-gray-300">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">
+                      TITEL
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                      PRIORITÄT
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                      ERSTELLT AM
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                      STATUS
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-slate-900">
+                      AKTIONEN
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {shifts
+                    .sort((a, b) => (a.priority ?? Number.MAX_VALUE) - (b.priority ?? Number.MAX_VALUE))
+                    .map((shift) => (
+                    <tr key={shift.id} className="hover:bg-slate-50">
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                        {shift.title}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                        {shift.priority !== undefined ? shift.priority : '-'}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                        {new Date(shift.createdAt).toLocaleDateString('de-DE')}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          shift.excludeFromCalculations
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {shift.excludeFromCalculations ? 'Inaktiv' : 'Aktiv'}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(shift)}
+                            className="text-emerald-600 hover:text-emerald-900"
+                            title="Bearbeiten"
+                          >
+                            <MdEdit className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(shift.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Löschen"
+                          >
+                            <MdDelete className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>

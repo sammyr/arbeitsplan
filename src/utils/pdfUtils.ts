@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 
@@ -14,7 +14,10 @@ interface Employee {
 interface WorkingShift {
   id: string;
   title: string;
+  employeeId: string;
+  date: string;
   workHours: number;
+  priority: number;
 }
 
 interface ShiftAssignment {
@@ -22,10 +25,6 @@ interface ShiftAssignment {
   employeeId: string;
   shiftId: string;
   date: string;
-  storeId: string;
-  workHours: number;
-  employee?: Employee;
-  shift?: WorkingShift;
 }
 
 interface Store {
@@ -35,191 +34,123 @@ interface Store {
 interface Assignment {
   id: string;
   employeeId: string;
-  shiftId: string;
-  date: string;
-  storeId: string;
-  workHours: number;
   employee?: Employee;
+  date: string;
+  workHours: number;
+  shiftId: string;
   shift?: WorkingShift;
 }
 
 export const exportCalendarToPDF = async (
-  calendarElement: HTMLElement | null,
-  store: Store,
+  assignments: ShiftAssignment[],
+  employees: Employee[],
+  shifts: WorkingShift[],
   currentDate: Date,
-  assignments: Assignment[]
+  storeName: string
 ) => {
-  if (!calendarElement) {
-    console.error('Calendar element not found');
-    toast.error('Kalender konnte nicht gefunden werden');
-    return;
-  }
-
   try {
-    console.log('Starting PDF export with:', {
-      hasCalendarElement: !!calendarElement,
-      store: store.name,
-      date: format(currentDate, 'MMMM yyyy'),
-      assignmentsCount: assignments.length
+    console.log('Starte PDF Export mit:', {
+      assignments: assignments.length,
+      employees: employees.length,
+      shifts: shifts.length,
+      currentDate: currentDate.toISOString(),
+      storeName
     });
 
-    // Create PDF in landscape mode
-    const pdf = new jsPDF({
+    // Erstelle PDF im Querformat
+    const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
       format: 'a4'
     });
 
-    // Add title
-    pdf.setFontSize(18);
-    pdf.setFont('helvetica', 'bold');
-    const title = `Arbeitsplan ${store.name} - ${format(currentDate, 'MMMM yyyy', { locale: de })}`;
-    const titleWidth = pdf.getStringUnitWidth(title) * pdf.getFontSize() / pdf.internal.scaleFactor;
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    pdf.text(title, (pageWidth - titleWidth) / 2, 20);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(12);
-
-    // Capture calendar view with proper margins
-    console.log('Capturing calendar view...');
-    const canvas = await html2canvas(calendarElement, {
-      scale: 1.5,
-      useCORS: true,
-      logging: true,
-      windowWidth: calendarElement.scrollWidth,
-      windowHeight: calendarElement.scrollHeight,
-      width: calendarElement.scrollWidth,
-      height: calendarElement.scrollHeight
-    });
+    // Setze Schriftart und Größe
+    doc.setFontSize(12);
     
-    console.log('Calendar captured, converting to image...', {
-      canvasWidth: canvas.width,
-      canvasHeight: canvas.height
-    });
-    const imgData = canvas.toDataURL('image/png');
+    // Titel
+    const month = format(currentDate, 'MMMM yyyy', { locale: de });
+    doc.text(`Arbeitsplan ${storeName} - ${month}`, 20, 20);
 
-    // Add calendar image to first page
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    
-    // Calculate the maximum width and height that will fit on the page with margins
-    const marginX = 15; // 15mm margins on left and right
-    const marginY = 25; // 25mm margin on top (for title) and bottom
-    const maxWidth = pdfWidth - (2 * marginX);
-    const maxHeight = pdfHeight - (2 * marginY);
-    
-    // Calculate the scale ratio while maintaining aspect ratio
-    let ratio = Math.min(
-      maxWidth / imgWidth,
-      maxHeight / imgHeight
-    );
+    // Tage des Monats
+    const startDate = startOfMonth(currentDate);
+    const endDate = endOfMonth(currentDate);
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-    // Scale the image dimensions
-    const scaledWidth = imgWidth * ratio;
-    const scaledHeight = imgHeight * ratio;
+    console.log('Erstelle Tabellendaten...');
 
-    // Center the image on the page
-    const imgX = (pdfWidth - scaledWidth) / 2;
-    const imgY = marginY;
+    // Tabellendaten vorbereiten
+    const tableData = employees.map(employee => {
+      let totalHours = 0;
+      const rowData = days.map(day => {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const dayAssignments = assignments.filter(a => 
+          format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
+          a.employeeId === employee.id
+        );
 
-    console.log('Adding calendar to PDF with dimensions:', {
-      pdfWidth,
-      pdfHeight,
-      scaledWidth,
-      scaledHeight,
-      imgX,
-      imgY,
-      ratio
-    });
+        // Stunden addieren
+        totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
 
-    pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
-
-    // Add new page for hours table
-    console.log('Creating hours table...');
-    pdf.addPage();
-
-    // Group assignments by employee
-    console.log('Processing assignments for hours table...');
-    const employeeHours = assignments.reduce((acc, assignment) => {
-      if (!assignment.employee) {
-        console.log('Skipping assignment without employee:', assignment);
-        return acc;
-      }
-
-      const employeeId = assignment.employee.id;
-      const employeeName = `${assignment.employee.firstName} ${assignment.employee.lastName || ''}`.trim();
-      
-      if (!acc[employeeId]) {
-        acc[employeeId] = {
-          name: employeeName,
-          totalHours: 0,
-          assignments: []
-        };
-      }
-
-      acc[employeeId].assignments.push(assignment);
-      acc[employeeId].totalHours += Number(assignment.workHours) || 0;
-
-      return acc;
-    }, {} as Record<string, { name: string; totalHours: number; assignments: Assignment[] }>);
-
-    // Create hours table
-    const tableData = Object.values(employeeHours)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(({ name, totalHours }) => [
-        name || 'Unbekannt',
-        totalHours.toFixed(1)
-      ]);
-
-    console.log('Hours table data:', tableData);
-
-    if (tableData.length === 0) {
-      pdf.setFontSize(12);
-      pdf.text('Keine Arbeitsstunden für diesen Monat gefunden.', 10, 20);
-    } else {
-      try {
-        const headers = [['Mitarbeiter', 'Gesamtstunden']];
+        // Schichten für diesen Tag
+        if (dayAssignments.length === 0) return '';
         
-        // Configure table
-        const startY = 20;
-        const options = {
-          startY,
-          head: headers,
-          body: tableData,
-          theme: 'grid',
-          styles: {
-            fontSize: 10,
-            cellPadding: 5
-          },
-          headStyles: {
-            fillColor: [66, 66, 66]
+        return dayAssignments
+          .map(a => shifts.find(s => s.id === a.shiftId)?.title || '')
+          .filter(title => title)
+          .join('\n');
+      });
+
+      return [
+        `${employee.firstName} ${employee.lastName || ''}`,
+        ...rowData,
+        totalHours.toFixed(1)
+      ];
+    });
+
+    console.log('Erstelle Spaltenköpfe...');
+
+    // Spaltenköpfe
+    const headers = [
+      'Mitarbeiter',
+      ...days.map(day => format(day, 'd')),
+      'Gesamt'
+    ];
+
+    console.log('Erstelle Tabelle...');
+
+    // Tabelle erstellen
+    autoTable(doc, {
+      head: [headers],
+      body: tableData,
+      startY: 30,
+      theme: 'grid',
+      styles: {
+        fontSize: 9,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        minCellHeight: 8
+      },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        [headers.length - 1]: { cellWidth: 20 }
+      },
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index > 0 && data.column.index < headers.length - 1) {
+          const day = days[data.column.index - 1];
+          if ([0, 6].includes(getDay(day))) {
+            doc.setFillColor(240, 240, 240);
+            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
           }
-        };
-
-        // Add table to PDF
-        if (typeof (pdf as any).autoTable === 'function') {
-          (pdf as any).autoTable(options);
-        } else {
-          console.error('autoTable is not available');
-          throw new Error('PDF table generation failed');
         }
-      } catch (tableError) {
-        console.error('Error generating table:', tableError);
-        pdf.setFontSize(12);
-        pdf.text('Fehler beim Erstellen der Stundentabelle', 10, 30);
       }
-    }
+    });
 
-    // Save PDF
-    const fileName = `Arbeitsplan_${store.name}_${format(currentDate, 'MM-yyyy')}.pdf`;
-    console.log('Saving PDF:', fileName);
-    pdf.save(fileName);
-    toast.success('PDF wurde erfolgreich erstellt');
+    console.log('Speichere PDF...');
+    doc.save(`Arbeitsplan_${storeName}_${month}.pdf`);
+    console.log('PDF erfolgreich erstellt!');
 
   } catch (error) {
-    console.error('Error exporting calendar to PDF:', error);
-    toast.error('Fehler beim Erstellen der PDF');
+    console.error('Fehler beim Erstellen der PDF:', error);
+    throw error;
   }
 };
