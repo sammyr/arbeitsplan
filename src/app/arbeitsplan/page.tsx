@@ -202,16 +202,6 @@ const Arbeitsplan3Page = memo(() => {
     setCurrentDate(newDate);
   };
 
-  // Load saved date from localStorage after mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
-      if (savedDate) {
-        setCurrentDate(new Date(savedDate));
-      }
-    }
-  }, []);
-
   // Save current date to localStorage when it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -395,6 +385,31 @@ const Arbeitsplan3Page = memo(() => {
 
   // Render Kalender
   const renderCalendar = () => {
+    // Überprüfe, ob Daten vorhanden sind
+    if (!selectedStore) {
+      return (
+        <div className="text-center p-8 bg-yellow-50 rounded-lg border border-yellow-200">
+          <p className="text-yellow-800 font-medium">Bitte wählen Sie zuerst eine Filiale aus, um den Arbeitsplan anzuzeigen.</p>
+        </div>
+      );
+    }
+
+    if (employees.length === 0) {
+      return (
+        <div className="text-center p-8 bg-yellow-50 rounded-lg border border-yellow-200">
+          <p className="text-yellow-800 font-medium">Es wurden noch keine Mitarbeiter angelegt. Bitte fügen Sie zuerst Mitarbeiter hinzu, um den Arbeitsplan zu nutzen.</p>
+        </div>
+      );
+    }
+
+    if (shifts.length === 0) {
+      return (
+        <div className="text-center p-8 bg-yellow-50 rounded-lg border border-yellow-200">
+          <p className="text-yellow-800 font-medium">Es wurden noch keine Arbeitsschichten definiert. Bitte legen Sie zuerst Arbeitsschichten an, um diese im Arbeitsplan einzutragen.</p>
+        </div>
+      );
+    }
+
     return (
       <div className="container mx-auto px-2 bg-transparent mt-4">
         {/* Calendar Table */}
@@ -440,9 +455,22 @@ const Arbeitsplan3Page = memo(() => {
                         }
 
                         const dateStr = format(day, 'yyyy-MM-dd');
-                        const dayAssignments = assignments.filter(
-                          a => format(new Date(a.date), 'yyyy-MM-dd') === dateStr
-                        );
+                        const dayAssignments = assignments
+                          .filter(a => format(new Date(a.date), 'yyyy-MM-dd') === dateStr)
+                          .sort((a, b) => {
+                            const shiftA = shifts.find(s => s.id === a.shiftId)?.title || '';
+                            const shiftB = shifts.find(s => s.id === b.shiftId)?.title || '';
+                            
+                            // Funktion zur Bestimmung der Schichtpriorität
+                            const getShiftPriority = (title: string) => {
+                              if (title === 'F' || title.startsWith('Früh')) return 1;
+                              if (title === 'Z' || title.startsWith('Zwischen')) return 2;
+                              if (title === 'S' || title.startsWith('Spät')) return 3;
+                              return 4; // Alle anderen Schichten
+                            };
+                            
+                            return getShiftPriority(shiftA) - getShiftPriority(shiftB);
+                          });
 
                         return (
                           <Droppable key={dateStr} droppableId={dateStr}>
