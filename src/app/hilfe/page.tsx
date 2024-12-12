@@ -85,6 +85,11 @@ export default function HelpPage() {
                     <li>Farbliche Hervorhebung der Wochenenden in allen Exporten</li>
                   </ul>
                 </li>
+                <li>Behobene Typfehler:
+                  <ul className="list-circle pl-5 mt-2 space-y-2">
+                    <li>Fallback-Werte für `employee.lastName`, `employee.email` und `employee.mobilePhone` hinzugefügt</li>
+                  </ul>
+                </li>
               </ul>
             </div>
 

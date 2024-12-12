@@ -23,3 +23,4 @@
 - Druckfunktion: Problem mit der Druckvorschau behoben
 - Excel-Export: Korrektur der Zeilenumbrüche in Zellen
 - PDF-Export: Verbessertes Error-Handling
+- Typfehler in `page.tsx` durch Hinzufügen von Fallback-Werten für `employee.lastName`, `employee.email` und `employee.mobilePhone` behoben.
