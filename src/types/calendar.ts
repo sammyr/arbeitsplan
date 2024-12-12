@@ -11,7 +11,7 @@ export interface CalendarEvent {
   shiftId: string;
   storeId: string;
   extendedProps: {
-    shift: WorkingShift & {
+    shift: Shift & {
       date: string;
     };
     employee: Employee;

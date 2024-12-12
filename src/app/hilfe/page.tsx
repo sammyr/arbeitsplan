@@ -54,7 +54,6 @@ export default function HelpPage() {
           </h2>
           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-l-4 border-emerald-400 p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
             <ul className="list-disc pl-5 text-slate-700 space-y-3">
-              <li>PDF Download - Arbeitsplan ausdrucken und als PDF exportieren</li>
               <li>Registrierung / Login</li>
               <li>Arbeitsplan an alle Mitarbeiter senden</li>
             </ul>

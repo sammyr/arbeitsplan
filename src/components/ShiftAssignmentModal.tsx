@@ -1,5 +1,5 @@
 import { Employee } from '@/types/employee';
-import { WorkingShift } from '@/types';
+import { ShiftDefinition } from '@/types';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useState, useEffect } from 'react';
 import { format } from 'date-fns';
@@ -9,7 +9,7 @@ interface ShiftAssignmentModalProps {
   onClose: () => void;
   onSave: (employeeId: string, shiftId: string, workHours: number) => void;
   employees: Employee[];
-  shifts: WorkingShift[];
+  shifts: ShiftDefinition[];
   date: Date;
   initialEmployeeId?: string;
   initialShiftId?: string;
@@ -110,8 +110,8 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                         id="employee"
                         value={selectedEmployee}
                         onChange={(e) => setSelectedEmployee(e.target.value)}
-                        className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                          focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                        className="block w-full px-4 py-3 text-base rounded-lg border-emerald-500 bg-white shadow-sm
+                          focus:border-emerald-500 focus:ring-0 hover:border-emerald-300
                           transition-colors duration-200"
                       >
                         <option value="">Bitte auswählen</option>
@@ -132,8 +132,8 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                         id="shift"
                         value={selectedShift}
                         onChange={(e) => setSelectedShift(e.target.value)}
-                        className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                          focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                        className="block w-full px-4 py-3 text-base rounded-lg border-emerald-500 bg-white shadow-sm
+                          focus:border-emerald-500 focus:ring-0 hover:border-emerald-300
                           transition-colors duration-200"
                       >
                         <option value="">Bitte auswählen</option>
@@ -147,26 +147,30 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
 
                     {/* Arbeitsstunden */}
                     <div>
-                      <label className="block text-base font-medium text-slate-700 mb-2">
+                      <label htmlFor="workHours" className="block text-base font-medium text-slate-700 mb-2">
                         Arbeitsstunden
                       </label>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-4">
                         <button
-                          onClick={() => setWorkHours(Math.max(0, workHours - 0.5))}
+                          type="button"
+                          onClick={() => setWorkHours(Math.max(1, workHours - 1))}
                           className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
                         >
                           -
                         </button>
                         <input
                           type="number"
+                          id="workHours"
                           value={workHours}
-                          onChange={(e) => setWorkHours(Math.max(0, parseFloat(e.target.value) || 0))}
-                          step="0.5"
-                          min="0"
-                          className="block w-20 rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          onChange={(e) => setWorkHours(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="block w-20 text-center px-4 py-3 text-base rounded-lg border-emerald-500 bg-white shadow-sm
+                            focus:border-emerald-500 focus:ring-0 hover:border-emerald-300
+                            transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          min="1"
                         />
                         <button
-                          onClick={() => setWorkHours(workHours + 0.5)}
+                          type="button"
+                          onClick={() => setWorkHours(workHours + 1)}
                           className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
                         >
                           +
@@ -186,8 +190,8 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                       type="button"
                       onClick={onClose}
                       className="px-6 py-2.5 text-base font-medium rounded-lg border border-slate-300 
-                        text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 
-                        focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
+                        text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-0
+                        transition-all duration-200"
                     >
                       Abbrechen
                     </button>
@@ -195,8 +199,8 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                       type="button"
                       onClick={handleSave}
                       className="px-6 py-2.5 text-base font-medium rounded-lg border border-transparent 
-                        text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 
-                        focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
+                        text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-0
+                        transition-all duration-200"
                     >
                       Speichern
                     </button>

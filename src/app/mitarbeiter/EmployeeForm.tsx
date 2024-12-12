@@ -40,12 +40,12 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              First Name
+              Vorname *
             </label>
             <input
               type="text"
-              {...register('firstName', { required: 'First name is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              {...register('firstName', { required: 'Vorname ist erforderlich' })}
+              className="mt-1 block w-full rounded-md border-emerald-500 shadow-sm focus:border-emerald-500 focus:ring-0"
             />
             {errors.firstName && (
               <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
@@ -54,16 +54,13 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Last Name
+              Nachname
             </label>
             <input
               type="text"
-              {...register('lastName', { required: 'Last name is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              {...register('lastName')}
+              className="mt-1 block w-full rounded-md border-emerald-500 shadow-sm focus:border-emerald-500 focus:ring-0"
             />
-            {errors.lastName && (
-              <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-            )}
           </div>
 
           <div>
@@ -73,13 +70,12 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
             <input
               type="email"
               {...register('email', {
-                required: 'Email is required',
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address',
+                  message: 'Ungültige Email-Adresse',
                 },
               })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-emerald-500 shadow-sm focus:border-emerald-500 focus:ring-0"
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -88,16 +84,13 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Mobile Phone
+              Mobiltelefon
             </label>
             <input
               type="tel"
-              {...register('mobilePhone', { required: 'Mobile phone is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              {...register('mobilePhone')}
+              className="mt-1 block w-full rounded-md border-emerald-500 shadow-sm focus:border-emerald-500 focus:ring-0"
             />
-            {errors.mobilePhone && (
-              <p className="mt-1 text-sm text-red-600">{errors.mobilePhone.message}</p>
-            )}
           </div>
 
           <div className="flex justify-end space-x-3 mt-6">

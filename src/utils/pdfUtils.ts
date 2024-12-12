@@ -4,47 +4,13 @@ import html2canvas from 'html2canvas';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
+import { Employee, ShiftDefinition } from '@/types';
+import { ShiftAssignment } from '@/types/shift-assignment';
 
-interface Employee {
-  id: string;
-  firstName: string;
-  lastName?: string;
-}
-
-interface WorkingShift {
-  id: string;
-  title: string;
-  employeeId: string;
-  date: string;
-  workHours: number;
-  priority: number;
-}
-
-interface ShiftAssignment {
-  id: string;
-  employeeId: string;
-  shiftId: string;
-  date: string;
-}
-
-interface Store {
-  name: string;
-}
-
-interface Assignment {
-  id: string;
-  employeeId: string;
-  employee?: Employee;
-  date: string;
-  workHours: number;
-  shiftId: string;
-  shift?: WorkingShift;
-}
-
-export const exportCalendarToPDF = async (
+export const exportCalendarToPDF = (
   assignments: ShiftAssignment[],
   employees: Employee[],
-  shifts: WorkingShift[],
+  shifts: ShiftDefinition[],
   currentDate: Date,
   storeName: string
 ) => {

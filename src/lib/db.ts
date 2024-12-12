@@ -192,17 +192,26 @@ const dbService = {
 
   async addEmployee(employee: Omit<Employee, 'id'>): Promise<Employee> {
     try {
-      const docRef = await addDoc(collection(db, 'mitarbeiter'), {
+      console.log('Adding employee with data:', JSON.stringify(employee, null, 2));
+      
+      // Stelle sicher, dass das Geburtsdatum gespeichert wird
+      const employeeData = {
         ...employee,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-      return {
-        ...employee,
-        id: docRef.id,
+        birthday: employee.birthday || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      
+      console.log('Saving employee data:', JSON.stringify(employeeData, null, 2));
+      const docRef = await addDoc(collection(db, 'mitarbeiter'), employeeData);
+      
+      const savedEmployee = {
+        ...employeeData,
+        id: docRef.id,
+      };
+      
+      console.log('Saved employee:', JSON.stringify(savedEmployee, null, 2));
+      return savedEmployee;
     } catch (error) {
       console.error('Error adding employee:', error);
       throw error;
@@ -211,17 +220,31 @@ const dbService = {
 
   async updateEmployee(id: string, employeeData: Partial<Employee>): Promise<void> {
     try {
+      console.log('Updating employee with ID:', id);
+      console.log('Update data:', JSON.stringify(employeeData, null, 2));
+
       const docRef = doc(db, 'mitarbeiter', id);
       const docSnap = await getDoc(docRef);
       
       if (!docSnap.exists()) {
+        console.error('Employee document not found');
         throw new Error(`Employee with ID ${id} does not exist`);
       }
 
-      await updateDoc(docRef, {
+      const currentData = docSnap.data();
+      console.log('Current employee data:', JSON.stringify(currentData, null, 2));
+
+      // Stelle sicher, dass die organizationId und das Geburtsdatum nicht verloren gehen
+      const updateData = {
         ...employeeData,
-        updatedAt: new Date()
-      });
+        organizationId: employeeData.organizationId || currentData.organizationId,
+        birthday: employeeData.birthday ?? currentData.birthday ?? '',
+        updatedAt: new Date().toISOString()
+      };
+
+      console.log('Final update data:', JSON.stringify(updateData, null, 2));
+      await updateDoc(docRef, updateData);
+      console.log('Update successful');
     } catch (error) {
       console.error('Error updating employee:', error);
       throw error;
@@ -277,33 +300,42 @@ const dbService = {
     try {
       console.log('Getting employees for organization:', organizationId);
       const employeesRef = collection(db, 'mitarbeiter');
-      
-      // Create a query that only returns employees with the matching organizationId
       const q = query(
         employeesRef,
         where('organizationId', '==', organizationId)
       );
       
+      console.log('Executing employees query...');
       const querySnapshot = await getDocs(q);
+      console.log('Raw query result size:', querySnapshot.size);
+      
       const employees = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        return {
+        console.log('Raw employee data:', doc.id, JSON.stringify(data, null, 2));
+        
+        const employee = {
           id: doc.id,
           firstName: data.firstName || '',
           lastName: data.lastName || '',
           email: data.email || '',
           mobilePhone: data.mobilePhone || '',
           role: data.role || '',
+          storeId: data.storeId || '',
+          birthday: data.birthday || '',
           organizationId: data.organizationId,
+          isActive: data.isActive !== false,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt
         } as Employee;
+        
+        console.log('Processed employee:', JSON.stringify(employee, null, 2));
+        return employee;
       });
       
-      console.log(`Found ${employees.length} employees for organization ${organizationId}`);
+      console.log('All processed employees:', JSON.stringify(employees, null, 2));
       return employees;
     } catch (error) {
-      console.error('Error getting employees by organization:', error);
+      console.error('Error getting employees:', error);
       throw error;
     }
   },

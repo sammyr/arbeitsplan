@@ -5,8 +5,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMon
 import { de } from 'date-fns/locale';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Store } from '@/types/store';
-import { Employee } from '@/types/employee';
-import { WorkingShift } from '@/types';
+import { Employee, WorkingShift, ShiftDefinition } from '@/types';
 import { ShiftAssignment } from '@/types/shift-assignment';
 import { dbService } from '@/lib/db';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -26,7 +25,7 @@ const loadStoreData = async (
   selectedStore: Store | null,
   setIsLoading: (isLoading: boolean) => void,
   setEmployees: (employees: Employee[]) => void,
-  setShifts: (shifts: WorkingShift[]) => void,
+  setShifts: (shifts: ShiftDefinition[]) => void,
   setAssignments: (assignments: ShiftAssignment[]) => void,
   userId: string
 ) => {
@@ -144,7 +143,7 @@ const Arbeitsplan3Page = memo(() => {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [shifts, setShifts] = useState<WorkingShift[]>([]);
+  const [shifts, setShifts] = useState<ShiftDefinition[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -943,7 +942,7 @@ const Arbeitsplan3Page = memo(() => {
                             localStorage.setItem('arbeitsplan3_currentDate', prevMonth.toISOString());
                           }
                         }}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors border border-green-500"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -953,7 +952,7 @@ const Arbeitsplan3Page = memo(() => {
                       <select
                         value={format(currentDate, 'yyyy-MM')}
                         onChange={handleMonthChange}
-                        className="min-w-[200px] pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors duration-200"
+                        className="bg-white border border-green-500 rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 min-w-[200px]"
                       >
                         {availableMonths.map(month => (
                           <option 
@@ -975,7 +974,7 @@ const Arbeitsplan3Page = memo(() => {
                             localStorage.setItem('arbeitsplan3_currentDate', nextMonth.toISOString());
                           }
                         }}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors border border-green-500"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -990,7 +989,7 @@ const Arbeitsplan3Page = memo(() => {
                         <select
                           value={selectedStore?.id || ''}
                           onChange={(e) => handleStoreChange(e.target.value)}
-                          className="min-w-[200px] pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors duration-200"
+                          className="bg-white border border-green-500 rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 min-w-[200px]"
                         >
                           <option value="" disabled>Filiale auswählen</option>
                           {stores.map(store => (
@@ -1004,7 +1003,7 @@ const Arbeitsplan3Page = memo(() => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={handleExportPDF}
-                            className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm"
+                            className="inline-flex items-center px-4 py-2.5 border border-green-500 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:border-green-500"
                           >
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1014,7 +1013,7 @@ const Arbeitsplan3Page = memo(() => {
 
                           <button
                             onClick={handleExcelExport}
-                            className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm"
+                            className="inline-flex items-center px-4 py-2.5 border border-green-500 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:border-green-500"
                           >
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -1024,7 +1023,7 @@ const Arbeitsplan3Page = memo(() => {
 
                           <button
                             onClick={handlePrint}
-                            className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm"
+                            className="inline-flex items-center px-4 py-2.5 border border-green-500 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:border-green-500"
                           >
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2m8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />

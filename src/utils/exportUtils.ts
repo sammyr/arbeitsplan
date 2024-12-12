@@ -2,18 +2,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from 'dat
 import { de } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-hot-toast';
-
-interface Employee {
-  id: string;
-  firstName: string;
-  lastName?: string;
-}
-
-interface WorkingShift {
-  id: string;
-  title: string;
-  priority?: number;
-}
+import { Employee, WorkingShift, ShiftDefinition } from '@/types';
 
 interface ShiftAssignment {
   id: string;
@@ -26,7 +15,7 @@ interface ShiftAssignment {
 export const exportToExcel = (
   assignments: ShiftAssignment[],
   employees: Employee[],
-  shifts: WorkingShift[],
+  shifts: ShiftDefinition[],
   currentDate: Date,
   storeName: string
 ) => {
@@ -186,7 +175,7 @@ export const exportToExcel = (
 export const printCalendar = (
   assignments: ShiftAssignment[],
   employees: Employee[],
-  shifts: WorkingShift[],
+  shifts: ShiftDefinition[],
   currentDate: Date,
   storeName: string
 ) => {

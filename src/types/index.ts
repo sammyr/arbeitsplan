@@ -1,19 +1,24 @@
-export interface Employee {
+import type { Employee } from './employee';
+export type { Employee };
+
+export interface ShiftDefinition {
   id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  mobilePhone: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  workHours: number;
+  priority?: number;
+  color?: string;
+  excludeFromCalculations?: boolean;
 }
 
 export interface WorkingShift {
   id: string;
-  title: string;
-  workHours: number;
   employeeId: string;
   date: string;
   startTime: string;
   endTime: string;
+  workHours: number;
   shiftId: string;
   storeId: string;
   color?: string;
