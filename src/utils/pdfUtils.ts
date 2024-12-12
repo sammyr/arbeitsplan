@@ -45,33 +45,38 @@ export const exportCalendarToPDF = (
     console.log('Erstelle Tabellendaten...');
 
     // Tabellendaten vorbereiten
-    const tableData = employees.map(employee => {
-      let totalHours = 0;
-      const rowData = days.map(day => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const dayAssignments = assignments.filter(a => 
-          format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
-          a.employeeId === employee.id
-        );
+    const tableData = employees
+      .map(employee => {
+        let totalHours = 0;
+        const rowData = days.map(day => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const dayAssignments = assignments.filter(a => 
+            format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
+            a.employeeId === employee.id
+          );
 
-        // Stunden addieren
-        totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
+          // Stunden addieren
+          totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
 
-        // Schichten für diesen Tag
-        if (dayAssignments.length === 0) return '';
-        
-        return dayAssignments
-          .map(a => shifts.find(s => s.id === a.shiftId)?.title || '')
-          .filter(title => title)
-          .join('\n');
-      });
+          // Schichten für diesen Tag
+          if (dayAssignments.length === 0) return '';
+          
+          return dayAssignments
+            .map(a => shifts.find(s => s.id === a.shiftId)?.title || '')
+            .filter(title => title)
+            .join('\n');
+        });
 
-      return [
-        `${employee.firstName} ${employee.lastName || ''}`,
-        ...rowData,
-        totalHours.toFixed(1)
-      ];
-    });
+        // Nur Mitarbeiter mit mindestens einem Assignment aufnehmen
+        if (totalHours === 0) return null;
+
+        return [
+          `${employee.firstName} ${employee.lastName || ''}`,
+          ...rowData,
+          totalHours.toFixed(1)
+        ];
+      })
+      .filter(row => row !== null);
 
     console.log('Erstelle Spaltenköpfe...');
 

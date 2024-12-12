@@ -32,33 +32,38 @@ export const exportToExcel = (
       'Gesamt'
     ];
 
-    const data = employees.map(employee => {
-      let totalHours = 0;
-      const rowData = days.map(day => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const dayAssignments = assignments.filter(a => 
-          format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
-          a.employeeId === employee.id
-        );
+    const data = employees
+      .map(employee => {
+        let totalHours = 0;
+        const rowData = days.map(day => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const dayAssignments = assignments.filter(a => 
+            format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
+            a.employeeId === employee.id
+          );
 
-        // Stunden addieren
-        totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
+          // Stunden addieren
+          totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
 
-        // Schichten für diesen Tag
-        if (dayAssignments.length === 0) return '';
-        
-        return dayAssignments
-          .map(a => shifts.find(s => s.id === a.shiftId)?.title || '')
-          .filter(title => title)
-          .join('\n');
-      });
+          // Schichten für diesen Tag
+          if (dayAssignments.length === 0) return '';
+          
+          return dayAssignments
+            .map(a => shifts.find(s => s.id === a.shiftId)?.title || '')
+            .filter(title => title)
+            .join('\n');
+        });
 
-      return [
-        `${employee.firstName} ${employee.lastName || ''}`,
-        ...rowData,
-        totalHours.toFixed(1)
-      ];
-    });
+        // Nur Mitarbeiter mit mindestens einem Assignment aufnehmen
+        if (totalHours === 0) return null;
+
+        return [
+          `${employee.firstName} ${employee.lastName || ''}`,
+          ...rowData,
+          totalHours.toFixed(1)
+        ];
+      })
+      .filter(row => row !== null);
 
     // Workbook erstellen
     const wb = XLSX.utils.book_new();
@@ -193,39 +198,45 @@ export const printCalendar = (
     const days = eachDayOfInterval({ start: startDate, end: endDate });
 
     // Tabellendaten vorbereiten
-    const tableRows = employees.map(employee => {
-      let totalHours = 0;
-      const rowData = days.map(day => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const dayAssignments = assignments.filter(a => 
-          format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
-          a.employeeId === employee.id
-        );
+    const tableRows = employees
+      .map(employee => {
+        let totalHours = 0;
+        const rowData = days.map(day => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const dayAssignments = assignments.filter(a => 
+            format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
+            a.employeeId === employee.id
+          );
 
-        // Stunden addieren
-        totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
+          // Stunden addieren
+          totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
 
-        // Schichten für diesen Tag
-        const dayShifts = dayAssignments
-          .map(a => {
-            const shift = shifts.find(s => s.id === a.shiftId);
-            return shift?.title || '';
-          })
-          .filter(title => title)
-          .join('\n');
+          // Schichten für diesen Tag
+          const dayShifts = dayAssignments
+            .map(a => {
+              const shift = shifts.find(s => s.id === a.shiftId);
+              return shift?.title || '';
+            })
+            .filter(title => title)
+            .join('\n');
 
-        const isWeekend = [0, 6].includes(getDay(day));
-        return `<td class="${isWeekend ? 'weekend' : ''}" style="white-space: pre-line;">${dayShifts}</td>`;
-      }).join('');
+          const isWeekend = [0, 6].includes(getDay(day));
+          return `<td class="${isWeekend ? 'weekend' : ''}" style="white-space: pre-line;">${dayShifts}</td>`;
+        }).join('');
 
-      return `
-        <tr>
-          <td class="employee-name">${employee.firstName} ${employee.lastName || ''}</td>
-          ${rowData}
-          <td class="total">${totalHours.toFixed(1)}</td>
-        </tr>
-      `;
-    }).join('');
+        // Nur Mitarbeiter mit mindestens einem Assignment aufnehmen
+        if (totalHours === 0) return null;
+
+        return `
+          <tr>
+            <td class="employee-name">${employee.firstName} ${employee.lastName || ''}</td>
+            ${rowData}
+            <td class="total">${totalHours.toFixed(1)}</td>
+          </tr>
+        `;
+      })
+      .filter(row => row !== null)
+      .join('');
 
     // HTML für die Tabelle erstellen
     const tableHTML = `
