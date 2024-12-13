@@ -58,6 +58,13 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
     onClose();
   };
 
+  const handleWorkHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value) && value >= 0.5) {
+      setWorkHours(value);
+    }
+  };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog 
@@ -153,7 +160,7 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                       <div className="flex items-center gap-4">
                         <button
                           type="button"
-                          onClick={() => setWorkHours(Math.max(1, workHours - 1))}
+                          onClick={() => setWorkHours((prev) => Math.max(0.5, prev - 0.5))}
                           className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
                         >
                           -
@@ -162,20 +169,23 @@ const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                           type="number"
                           id="workHours"
                           value={workHours}
-                          onChange={(e) => setWorkHours(Math.max(1, parseInt(e.target.value) || 0))}
+                          onChange={handleWorkHoursChange}
                           className="block w-20 text-center px-4 py-3 text-base rounded-lg border-emerald-500 bg-white shadow-sm
                             focus:border-emerald-500 focus:ring-0 hover:border-emerald-300
                             transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          min="1"
+                          step="0.5"
+                          min="0.5"
                         />
                         <button
                           type="button"
-                          onClick={() => setWorkHours(workHours + 1)}
+                          onClick={() => setWorkHours((prev) => prev + 0.5)}
                           className="p-2 rounded-md border border-gray-300 hover:bg-gray-50"
                         >
                           +
                         </button>
                       </div>
+                      {/* Hinweis: Die Arbeitsstunden-Eingabe wurde so konfiguriert, dass sie in 0.5er-Schritten erfolgt.
+                        Bitte sicherstellen, dass diese Funktionalität beibehalten wird, um flexible Eingaben wie 2.2 oder 8.5 Stunden zu ermöglichen. */}
                     </div>
 
                     {error && (
