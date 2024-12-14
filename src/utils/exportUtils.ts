@@ -29,7 +29,7 @@ export const exportToExcel = (
     const headers = [
       'Mitarbeiter',
       ...days.map(day => format(day, 'd')),
-      'Gesamt'
+      'G'
     ];
 
     const data = employees
@@ -37,28 +37,47 @@ export const exportToExcel = (
         let totalHours = 0;
         const rowData = days.map(day => {
           const dateStr = format(day, 'yyyy-MM-dd');
-          const dayAssignments = assignments.filter(a => 
-            format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
-            a.employeeId === employee.id
-          );
+
+          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
+          // Die Schichten an Wochenenden (Samstag/Sonntag) MÜSSEN immer angezeigt werden!
+          // Diese Tage sind für die Dienstplanung essentiell und dürfen niemals ausgeblendet,
+          // gefiltert oder anderweitig modifiziert werden.
+          // Änderungen an dieser Logik können zu fehlerhafter Dienstplanung führen!
+          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          const dayAssignments = assignments
+            .filter(a => 
+              format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
+              a.employeeId === employee.id
+            )
+            // Sortiere nach Schicht-ID um konsistente Reihenfolge zu gewährleisten
+            .sort((a, b) => (a.shiftId || '').localeCompare(b.shiftId || ''));
 
           // Stunden addieren
           totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
 
-          // Schichten für diesen Tag
+          // Wenn keine Schichten, leeren String zurückgeben
           if (dayAssignments.length === 0) return '';
           
-          return dayAssignments
-            .map(a => shifts.find(s => s.id === a.shiftId)?.title || '')
-            .filter(title => title)
-            .join('\n');
+          // Schichten für diesen Tag, Duplikate entfernen
+          const uniqueShifts = new Set(
+            dayAssignments
+              .map(a => {
+                const shift = shifts.find(s => s.id === a.shiftId);
+                return shift?.title || '';
+              })
+              .filter(Boolean)
+          );
+
+          return Array.from(uniqueShifts).join('\n');
         });
 
-        // Nur Mitarbeiter mit mindestens einem Assignment aufnehmen
+        // Nur Mitarbeiter mit mindestens einer Schicht aufnehmen
         if (totalHours === 0) return null;
 
         return [
-          `${employee.firstName} ${employee.lastName || ''}`,
+          employee.firstName,
           ...rowData,
           totalHours.toFixed(1)
         ];
@@ -71,9 +90,9 @@ export const exportToExcel = (
 
     // Zellenbreiten anpassen
     const colWidths = [
-      { wch: 25 }, // Mitarbeiterspalte
-      ...Array(days.length).fill({ wch: 10 }), // Tagesspalten
-      { wch: 12 }, // Gesamtspalte
+      { wch: 15 }, // Mitarbeiterspalte
+      ...Array(days.length).fill({ wch: 5 }), // Tagesspalten
+      { wch: 6 }, // Gesamtspalte
     ];
     ws['!cols'] = colWidths;
 
@@ -83,50 +102,69 @@ export const exportToExcel = (
 
     // Styling für den Header
     const headerStyle = {
-      fill: { fgColor: { rgb: "4F81BD" } }, // Blauer Hintergrund
       font: { 
-        bold: true, 
-        color: { rgb: "FFFFFF" } 
+        bold: true,
+        name: 'Helvetica LT Std',
+        size: 16,
+        color: { rgb: '000000' }
+      },
+      fill: {
+        fgColor: { rgb: 'E0E0E0' },
+        patternType: 'solid'
       },
       alignment: { 
-        horizontal: "center",
-        vertical: "center",
-        wrapText: true
+        horizontal: 'center',
+        vertical: 'center'
       },
       border: {
-        top: { style: "thin" },
-        bottom: { style: "thin" },
-        left: { style: "thin" },
-        right: { style: "thin" }
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
       }
     };
 
     // Styling für normale Zellen
     const normalStyle = {
+      font: {
+        name: 'Helvetica LT Std',
+        size: 16,
+        color: { rgb: '000000' }
+      },
       alignment: { 
-        vertical: "center",
-        wrapText: true
+        vertical: 'center',
+        horizontal: 'center'
       },
       border: {
-        top: { style: "thin" },
-        bottom: { style: "thin" },
-        left: { style: "thin" },
-        right: { style: "thin" }
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
       }
     };
 
     // Styling für Wochenenden
     const weekendStyle = {
       ...normalStyle,
-      fill: { fgColor: { rgb: "F2F2F2" } } // Hellgrauer Hintergrund
+      fill: { 
+        fgColor: { rgb: 'F5F5F5' },
+        patternType: 'solid'
+      }
     };
 
     // Styling für die Gesamtspalte
     const totalStyle = {
       ...normalStyle,
-      font: { bold: true },
-      fill: { fgColor: { rgb: "E6E6E6" } },
-      alignment: { horizontal: "center" }
+      font: { 
+        bold: true,
+        name: 'Helvetica LT Std',
+        size: 16,
+        color: { rgb: '000000' }
+      },
+      fill: {
+        fgColor: { rgb: 'E0E0E0' },
+        patternType: 'solid'
+      }
     };
 
     // Styles anwenden
@@ -145,26 +183,35 @@ export const exportToExcel = (
 
         if (col === 0) {
           // Mitarbeiterspalte
-          Object.assign(ws[cellRef].s, { ...normalStyle, alignment: { horizontal: "left" } });
+          Object.assign(ws[cellRef].s, { 
+            ...normalStyle, 
+            font: { 
+              ...normalStyle.font,
+              size: 12,  
+              bold: true,
+              name: 'Helvetica LT Std'
+            },
+            alignment: { 
+              horizontal: 'left' 
+            } 
+          });
         } else if (col === headers.length - 1) {
           // Gesamtspalte
           Object.assign(ws[cellRef].s, totalStyle);
         } else {
           // Normale Tage und Wochenenden
           const day = days[col - 1];
-          const isWeekend = [0, 6].includes(getDay(day));
-          Object.assign(ws[cellRef].s, isWeekend ? weekendStyle : normalStyle);
+          const dayOfWeek = getDay(day);
+          const isWeekend = [0, 6].includes(dayOfWeek);
+          const style = isWeekend ? weekendStyle : normalStyle;
+
+          Object.assign(ws[cellRef].s, style);
         }
       }
     }
 
-    // Titel hinzufügen
-    const title = `Arbeitsplan ${storeName} - ${format(currentDate, 'MMMM yyyy', { locale: de })}`;
-    const titleRow = [{ v: title, s: { font: { bold: true, size: 14 } } }];
-    XLSX.utils.sheet_add_aoa(ws, [titleRow], { origin: -1 });
-
     // Worksheet zum Workbook hinzufügen
-    XLSX.utils.book_append_sheet(wb, ws, 'Arbeitsplan');
+    XLSX.utils.book_append_sheet(wb, ws, 'Dienstplan'); // 'Dientsplan');
 
     // Excel-Datei speichern
     const month = format(currentDate, 'MMMM_yyyy', { locale: de });
@@ -174,160 +221,5 @@ export const exportToExcel = (
   } catch (error) {
     console.error('Fehler beim Excel-Export:', error);
     toast.error('Fehler beim Erstellen der Excel-Datei');
-  }
-};
-
-export const printCalendar = (
-  assignments: ShiftAssignment[],
-  employees: Employee[],
-  shifts: ShiftDefinition[],
-  currentDate: Date,
-  storeName: string
-) => {
-  try {
-    // Druckbaren Bereich erstellen
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Popup wurde blockiert');
-      return;
-    }
-
-    // Tage des Monats
-    const startDate = startOfMonth(currentDate);
-    const endDate = endOfMonth(currentDate);
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
-
-    // Tabellendaten vorbereiten
-    const tableRows = employees
-      .map(employee => {
-        let totalHours = 0;
-        const rowData = days.map(day => {
-          const dateStr = format(day, 'yyyy-MM-dd');
-          const dayAssignments = assignments.filter(a => 
-            format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
-            a.employeeId === employee.id
-          );
-
-          // Stunden addieren
-          totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
-
-          // Schichten für diesen Tag
-          const dayShifts = dayAssignments
-            .map(a => {
-              const shift = shifts.find(s => s.id === a.shiftId);
-              return shift?.title || '';
-            })
-            .filter(title => title)
-            .join('\n');
-
-          const isWeekend = [0, 6].includes(getDay(day));
-          return `<td class="${isWeekend ? 'weekend' : ''}" style="white-space: pre-line;">${dayShifts}</td>`;
-        }).join('');
-
-        // Nur Mitarbeiter mit mindestens einem Assignment aufnehmen
-        if (totalHours === 0) return null;
-
-        return `
-          <tr>
-            <td class="employee-name">${employee.firstName} ${employee.lastName || ''}</td>
-            ${rowData}
-            <td class="total">${totalHours.toFixed(1)}</td>
-          </tr>
-        `;
-      })
-      .filter(row => row !== null)
-      .join('');
-
-    // HTML für die Tabelle erstellen
-    const tableHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Arbeitsplan ${storeName}</title>
-          <style>
-            @media print {
-              @page {
-                size: landscape;
-                margin: 1cm;
-              }
-              body { 
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-            }
-            body { 
-              font-family: Arial, sans-serif;
-              margin: 20px;
-              font-size: 11px;
-            }
-            h2 {
-              margin-bottom: 20px;
-              color: #333;
-            }
-            table { 
-              border-collapse: collapse; 
-              width: 100%;
-              margin-top: 10px;
-            }
-            th, td { 
-              border: 1px solid #ddd; 
-              padding: 4px;
-              text-align: center;
-              min-width: 25px;
-              height: 25px;
-            }
-            th { 
-              background-color: #f5f5f5;
-              font-weight: bold;
-            }
-            .weekend { 
-              background-color: #f0f0f0;
-            }
-            .employee-name { 
-              text-align: left;
-              padding-left: 8px;
-              font-weight: bold;
-              min-width: 120px;
-            }
-            .total { 
-              font-weight: bold;
-              background-color: #f5f5f5;
-            }
-          </style>
-        </head>
-        <body>
-          <h2>Arbeitsplan ${storeName} - ${format(currentDate, 'MMMM yyyy', { locale: de })}</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Mitarbeiter</th>
-                ${days.map(day => `
-                  <th class="${[0, 6].includes(getDay(day)) ? 'weekend' : ''}">${format(day, 'd')}</th>
-                `).join('')}
-                <th>Gesamt</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tableRows}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
-
-    // HTML in das neue Fenster schreiben
-    printWindow.document.write(tableHTML);
-    printWindow.document.close();
-
-    // Warten bis alles geladen ist und dann drucken
-    setTimeout(() => {
-      printWindow.print();
-      // Fenster schließen nach dem Drucken
-      printWindow.onafterprint = () => printWindow.close();
-    }, 500);
-
-  } catch (error) {
-    console.error('Fehler beim Drucken:', error);
-    toast.error('Fehler beim Drucken');
   }
 };

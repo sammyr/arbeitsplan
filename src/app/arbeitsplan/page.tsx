@@ -12,7 +12,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import ShiftAssignmentModal from '@/components/ShiftAssignmentModal';
 import { exportCalendarToPDF } from '@/utils/pdfUtils';
-import { exportToExcel, printCalendar } from '@/utils/exportUtils';
+import { exportToExcel } from '@/utils/exportUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
 import { collection, query, where, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
@@ -837,26 +837,6 @@ const Arbeitsplan3Page = memo(() => {
     }
   };
 
-  const handlePrint = () => {
-    if (!selectedStore) {
-      toast.error('Bitte wählen Sie zuerst einen Store aus');
-      return;
-    }
-
-    try {
-      printCalendar(
-        assignments,
-        employees,
-        shifts,
-        currentDate,
-        selectedStore.name
-      );
-    } catch (error) {
-      console.error('Error printing:', error);
-      toast.error('Fehler beim Drucken');
-    }
-  };
-
   // Berechne die Gesamtstunden pro Mitarbeiter für den aktuellen Monat
   const calculateEmployeeHours = (employeeId: string) => {
     const start = startOfMonth(currentDate);
@@ -1019,16 +999,6 @@ const Arbeitsplan3Page = memo(() => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
                             Excel Export
-                          </button>
-
-                          <button
-                            onClick={handlePrint}
-                            className="inline-flex items-center px-4 py-2.5 border border-green-500 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:border-green-500"
-                          >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2m8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
-                            Drucken
                           </button>
                         </div>
                       </div>
