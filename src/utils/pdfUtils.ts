@@ -145,8 +145,8 @@ export const exportCalendarToPDF = async (
         overflow: 'linebreak',
         halign: 'center',
         valign: 'middle',
-        lineWidth: 0.2,
-        minCellHeight: 8,
+        lineWidth: 0.1,
+        minCellHeight: 10,
         fillColor: [255, 255, 255],
         font: 'helvetica',
       },
@@ -159,10 +159,10 @@ export const exportCalendarToPDF = async (
       },
       columnStyles: {
         0: { // Mitarbeiterspalte
-          cellWidth: tableWidth * 0.12,
+          cellWidth: tableWidth * 0.10,
           halign: 'left',
           fontStyle: 'bold',
-          fontSize: 9,
+          fontSize: 13,
           font: 'helvetica'
         },
         [headers.length - 1]: { // Gesamtspalte (G)
@@ -182,14 +182,14 @@ export const exportCalendarToPDF = async (
         if (data.column.index === 0) {
           data.cell.styles.halign = 'left';
           if (data.section === 'body') {
-            data.cell.styles.fontSize = 9;
+            data.cell.styles.fontSize = 10;
             data.cell.styles.fontStyle = 'bold';
             data.cell.styles.font = 'helvetica';
           }
         } else if (data.section === 'body' || data.section === 'head') {
           // Für alle anderen Spalten
           if (data.column.index > 0 && data.column.index < headers.length - 1) {
-            const daysWidth = (tableWidth * 0.82) / days.length;
+            const daysWidth = (tableWidth * 0.80) / days.length;
             data.cell.styles.cellWidth = daysWidth;
             data.cell.styles.halign = 'center';
             
@@ -230,7 +230,7 @@ export const exportCalendarToPDF = async (
     });
 
     console.log('Speichere PDF...');
-    doc.save(`Arbeitsplan_${storeName}_${month}.pdf`);
+    doc.save(`Dientsplan_${storeName}_${month}.pdf`);
     console.log('PDF erfolgreich erstellt!');
 
   } catch (error) {
