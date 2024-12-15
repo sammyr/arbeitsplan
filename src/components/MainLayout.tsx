@@ -14,7 +14,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
 
   // List of public routes that don't require authentication
-  const publicRoutes = ['/auth/login', '/auth/register'];
+  const publicRoutes = ['/auth/login', '/auth/register', '/auth/passwort'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   useEffect(() => {
@@ -97,10 +97,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         )}
 
         {/* Main content */}
-        <main className="flex-1 bg-slate-50">
-          <div className={`mx-auto max-w-7xl ${shouldShowSidebar ? 'lg:pl-[280px]' : ''}`}>
-            {children}
-          </div>
+        <main className={`flex-1 ${isPublicRoute ? 'w-full' : 'bg-slate-50'}`}>
+          {isPublicRoute ? (
+            children
+          ) : (
+            <div className={`mx-auto max-w-7xl ${shouldShowSidebar ? 'lg:pl-[280px]' : ''}`}>
+              {children}
+            </div>
+          )}
         </main>
       </div>
     </div>

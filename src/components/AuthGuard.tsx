@@ -17,7 +17,7 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
   const pathname = usePathname();
 
   // List of public routes that don't require authentication
-  const publicRoutes = ['/auth/login', '/auth/register'];
+  const publicRoutes = ['/auth/login', '/auth/register', '/auth/passwort'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   useEffect(() => {

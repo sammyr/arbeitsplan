@@ -30,23 +30,31 @@ console.log('Firebase Config:', {
 });
 
 // Initialize Firebase
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
 
-// Set persistence to LOCAL (browser will maintain the session)
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error("Auth persistence error:", error);
-});
+// Initialize Firebase Authentication and get a reference to the service
+export const auth = getAuth(app);
+
+// Set persistence to LOCAL
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence)
+    .catch((error) => {
+      console.error('Error setting auth persistence:', error);
+    });
+}
 
 // Initialize Firestore
-const db = getFirestore(app);
+export const db = getFirestore(app);
 
-// Initialize Google Provider with custom parameters
-const googleProvider = new GoogleAuthProvider();
+// Initialize Google Auth Provider
+export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('https://www.googleapis.com/auth/userinfo.email');
 googleProvider.addScope('https://www.googleapis.com/auth/userinfo.profile');
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
-
-export { auth, db, googleProvider };

@@ -73,7 +73,8 @@ export default function HelpPage() {
               <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
                 <li>Export-Funktionen:
                   <ul className="list-circle pl-5 mt-2 space-y-2">
-                    <li>PDF-Export im DIN A4 Querformat mit übersichtlicher Schichtdarstellung</li>
+                    <li>PDF Export Anpassungen</li>
+                    <li> PDF-Export im DIN A4 Querformat mit übersichtlicher Schichtdarstellung</li>
                     <li>Verbessertes Excel-Export Design mit professionellem Layout</li>
                     <li>Optimierte Druckfunktion mit angepasster Vorschau</li>
                   </ul>
