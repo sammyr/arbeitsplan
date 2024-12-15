@@ -132,8 +132,9 @@ export const exportCalendarToPDF = async (
         return [
           employee.firstName,
           ...rowData,
-          totalHours.toFixed(1)
+          ''
         ];
+    
       })
       .filter(row => row !== null);
 

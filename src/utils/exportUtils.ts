@@ -82,7 +82,7 @@ export const exportToExcel = (
         return [
           employee.firstName,
           ...rowData,
-          totalHours.toFixed(1)
+          ''
         ];
       })
       .filter(row => row !== null);
