@@ -837,32 +837,75 @@ const Arbeitsplan3Page = memo(() => {
     }
   };
 
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
+  // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
+  // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
+  // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
+  // 
+  // Die Berechnung MUSS tageweise erfolgen:
+  // 1. Für jeden Tag im Monat werden die Schichten des Mitarbeiters gefiltert
+  // 2. Nur aktive Schichten (ohne excludeFromCalculations) werden berücksichtigt
+  // 3. Die Stunden werden pro Tag summiert
+  // 
+  // Diese Logik MUSS identisch sein mit:
+  // - PDF-Export (pdfUtils.ts)
+  // - Excel-Export (exportUtils.ts)
+  // - Auswertungen (auswertungen/page.tsx)
+  // 
+  // Diese Logik ist essentiell für die korrekte Arbeitszeiterfassung!
+  // NICHT ÄNDERN! Bei Fragen: Dokumentation konsultieren!
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   // Berechne die Gesamtstunden pro Mitarbeiter für den aktuellen Monat
   const calculateEmployeeHours = (employeeId: string) => {
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
-    
-    const employeeAssignments = assignments.filter(
-      (assignment) => {
-        const assignmentDate = new Date(assignment.date);
-        const shift = shifts.find(s => s.id === assignment.shiftId);
-        return (
-          assignment.employeeId === employeeId &&
-          assignmentDate >= start &&
-          assignmentDate <= end &&
-          !shift?.excludeFromCalculations // Exclude shifts marked with excludeFromCalculations
-        );
-      }
-    );
+    let totalHours = 0;
 
+    // Berechne für jeden Tag im Monat
+    const days = eachDayOfInterval({ start, end });
+    days.forEach(day => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      
+      // Hole alle Schichten des Mitarbeiters für diesen Tag
+      const dayAssignments = assignments.filter(a => 
+        format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
+        a.employeeId === employeeId
+      );
+
+      // Addiere nur die Stunden von aktiven Schichten
+      const dayHours = dayAssignments.reduce((sum, a) => {
+        const shift = shifts.find(s => s.id === a.shiftId);
+        return shift?.excludeFromCalculations ? sum : sum + (a.workHours || 0);
+      }, 0);
+
+      totalHours += dayHours;
+    });
+
+    return totalHours;
+  };
+
+  // Berechne die Gesamtstunden für einen Mitarbeiter
+  const calculateTotalHours = (employeeId: string) => {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
+    // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
+    // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
+    // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
+    // Diese Logik ist essentiell für die korrekte Arbeitszeiterfassung!
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    const employeeAssignments = assignments.filter((a) => a.employeeId === employeeId);
     return employeeAssignments.reduce((total, assignment) => {
-      return total + (assignment.workHours || 0);
+      const shift = shifts.find(s => s.id === assignment.shiftId);
+      return shift?.excludeFromCalculations ? total : total + (assignment.workHours || 0);
     }, 0);
   };
 
-  const calculateTotalHours = () => {
+  const calculateTotalHoursAll = () => {
     return employees.reduce((total, employee) => {
-      return total + calculateEmployeeHours(employee.id);
+      return total + calculateTotalHours(employee.id);
     }, 0);
   };
 
@@ -1047,7 +1090,7 @@ const Arbeitsplan3Page = memo(() => {
                         Gesamt
                       </td>
                       <td className="px-4 py-2 border-b border-gray-200 text-right font-medium">
-                        {calculateTotalHours().toFixed(1)} Stunden
+                        {employees.reduce((total, employee) => total + calculateEmployeeHours(employee.id), 0).toFixed(1)} Stunden
                       </td>
                     </tr>
                   </tbody>

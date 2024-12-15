@@ -127,24 +127,31 @@ export default function AuswertungenPage() {
   };
 
   const calculateTotalHours = (employeeId: string) => {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
+    // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
+    // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
+    // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
+    // Diese Logik ist essentiell für die korrekte Arbeitszeiterfassung!
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     const start = startOfMonth(selectedDate);
     const end = endOfMonth(selectedDate);
     
-    const filteredAssignments = assignments.filter(
-      (assignment) => {
-        const assignmentDate = new Date(assignment.date);
-        const shift = shifts.find(s => s.id === assignment.shiftId);
-        return (
-          assignment.employeeId === employeeId &&
-          assignmentDate >= start &&
-          assignmentDate <= end &&
-          !shift?.excludeFromCalculations // Exclude shifts marked with excludeFromCalculations
-        );
-      }
-    );
+    // Filtere Schichten nach Mitarbeiter UND Datum
+    const employeeAssignments = assignments.filter((assignment) => {
+      const assignmentDate = new Date(assignment.date);
+      return (
+        assignment.employeeId === employeeId &&
+        assignmentDate >= start &&
+        assignmentDate <= end
+      );
+    });
 
-    return filteredAssignments.reduce((total, assignment) => {
-      return total + (assignment.workHours || 0);
+    // Berechne die Stunden nur für aktive Schichten
+    return employeeAssignments.reduce((total, assignment) => {
+      const shift = shifts.find(s => s.id === assignment.shiftId);
+      return shift?.excludeFromCalculations ? total : total + (assignment.workHours || 0);
     }, 0);
   };
 

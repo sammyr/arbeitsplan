@@ -97,13 +97,24 @@ export const exportCalendarToPDF = async (
           // Änderungen an dieser Logik können zu fehlerhafter Dienstplanung führen!
           // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
+          // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
+          // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
+          // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
+          // Diese Logik ist essentiell für die korrekte Arbeitszeiterfassung!
+          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
           const dayAssignments = assignments.filter(a => 
             format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
             a.employeeId === employee.id
           );
 
-          // Stunden addieren
-          totalHours += dayAssignments.reduce((sum, a) => sum + (a.workHours || 0), 0);
+          // Stunden nur für aktive Schichten addieren
+          totalHours += dayAssignments.reduce((sum, a) => {
+            const shift = shifts.find(s => s.id === a.shiftId);
+            return shift?.excludeFromCalculations ? sum : sum + (a.workHours || 0);
+          }, 0);
 
           // Wenn keine Schichten, leeren String zurückgeben
           if (dayAssignments.length === 0) return '';
