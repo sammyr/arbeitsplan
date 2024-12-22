@@ -13,7 +13,7 @@ interface FormData {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
+  mobilePhone: string;
   birthday: string;
   storeId?: string;
 }
@@ -26,7 +26,7 @@ export default function EmployeesPage() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    mobilePhone: '',
     birthday: '',
   });
 
@@ -150,7 +150,7 @@ export default function EmployeesPage() {
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
+        mobilePhone: '',
         birthday: '',
       });
       setEditingEmployee(null);
@@ -189,7 +189,7 @@ export default function EmployeesPage() {
       firstName: employee.firstName,
       lastName: employee.lastName || "",
       email: employee.email || "",
-      phone: employee.phone || "",
+      mobilePhone: employee.mobilePhone || "",
       birthday: formattedBirthday,
     });
   };
@@ -356,17 +356,18 @@ export default function EmployeesPage() {
                   />
                 </div>
 
-                {/* Telefon */}
+                {/* Mobilnummer */}
                 <div>
-                  <label htmlFor="phone" className="block text-base font-medium text-slate-700 mb-2">
-                    Telefon
+                  <label htmlFor="mobilePhone" className="block text-base font-medium text-slate-700 mb-2">
+                    Mobilnummer
                   </label>
                   <input
                     type="tel"
-                    name="phone"
-                    id="phone"
-                    value={formData.phone}
+                    name="mobilePhone"
+                    id="mobilePhone"
+                    value={formData.mobilePhone}
                     onChange={handleInputChange}
+                    placeholder="+49 123 45678900"
                     className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
                       focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
                       transition-colors duration-200"
@@ -384,7 +385,7 @@ export default function EmployeesPage() {
                     firstName: '',
                     lastName: '',
                     email: '',
-                    phone: '',
+                    mobilePhone: '',
                     birthday: '',
                   });
                   setEditingEmployee(null);
@@ -421,7 +422,7 @@ export default function EmployeesPage() {
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">E-Mail</div>
                   </th>
                   <th scope="col" className="px-6 py-2 border-b border-slate-200">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Telefon</div>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Mobilnummer</div>
                   </th>
                   <th scope="col" className="px-6 py-2 border-b border-slate-200">
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Geburtstag</div>
@@ -448,7 +449,7 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
-                        {employee.phone || '-'}
+                        {employee.mobilePhone || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
