@@ -13,7 +13,7 @@ export interface Employee {
   lastName: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'user';
+  birthday?: string;
   createdAt: string;
   updatedAt: string;
   targetHours?: number;

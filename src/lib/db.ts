@@ -319,7 +319,7 @@ const dbService = {
           lastName: data.lastName || '',
           email: data.email || '',
           mobilePhone: data.mobilePhone || '',
-          role: data.role || '',
+          birthday: data.birthday || '',
           storeId: data.storeId || '',
           organizationId: data.organizationId,
           isActive: data.isActive !== false,

@@ -14,7 +14,7 @@ interface FormData {
   lastName: string;
   email: string;
   phone: string;
-  role: 'admin' | 'user';
+  birthday: string;
   storeId?: string;
 }
 
@@ -27,7 +27,7 @@ export default function EmployeesPage() {
     lastName: '',
     email: '',
     phone: '',
-    role: 'user',
+    birthday: '',
   });
 
   const { user } = useAuth();
@@ -47,10 +47,18 @@ export default function EmployeesPage() {
       const data = await dbService.getEmployeesByOrganization(user.uid);
       console.log('Raw employee data:', JSON.stringify(data, null, 2));
       
-      // Filter out any undefined or invalid entries
+      // Filter out any undefined or invalid entries and ensure birthday format
       const validEmployees = data.filter((employee: Employee) =>
         employee && employee.id && employee.organizationId === user.uid
-      );
+      ).map((employee: Employee) => {
+        // Ensure birthday is in correct format
+        if (employee.birthday && employee.birthday.includes('-')) {
+          // Convert YYYY-MM-DD to DD.MM.YYYY
+          const [year, month, day] = employee.birthday.split('-');
+          employee.birthday = `${day}.${month}.${year}`;
+        }
+        return employee;
+      });
       
       console.log('Filtered employees:', JSON.stringify(validEmployees, null, 2));
       setEmployees(validEmployees);
@@ -77,8 +85,25 @@ export default function EmployeesPage() {
     setIsSubmitting(true);
 
     try {
+      let formattedBirthday = '';
+      if (formData.birthday) {
+        try {
+          // Konvertiere YYYY-MM-DD zu DD.MM.YYYY
+          const date = new Date(formData.birthday + 'T00:00:00');
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          formattedBirthday = `${day}.${month}.${year}`;
+          console.log('Saving birthday:', formattedBirthday);
+        } catch (error) {
+          console.error('Error formatting birthday for save:', error);
+          formattedBirthday = formData.birthday;
+        }
+      }
+
       const employeeData = {
         ...formData,
+        birthday: formattedBirthday,
         organizationId: user.uid,
         updatedAt: new Date().toISOString(),
       };
@@ -126,7 +151,7 @@ export default function EmployeesPage() {
         lastName: '',
         email: '',
         phone: '',
-        role: 'user',
+        birthday: '',
       });
       setEditingEmployee(null);
     } catch (error) {
@@ -141,13 +166,31 @@ export default function EmployeesPage() {
   };
 
   const handleEdit = (employee: Employee) => {
+    let formattedBirthday = '';
+    if (employee.birthday) {
+      try {
+        if (employee.birthday.includes('.')) {
+          // Konvertiere DD.MM.YYYY zu YYYY-MM-DD
+          const [day, month, year] = employee.birthday.split('.');
+          formattedBirthday = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else if (employee.birthday.includes('-')) {
+          // Bereits im YYYY-MM-DD Format
+          formattedBirthday = employee.birthday;
+        }
+        console.log('Original birthday:', employee.birthday);
+        console.log('Formatted birthday:', formattedBirthday);
+      } catch (error) {
+        console.error('Error formatting birthday:', error);
+      }
+    }
+
     setEditingEmployee(employee);
     setFormData({
       firstName: employee.firstName,
       lastName: employee.lastName || "",
       email: employee.email || "",
       phone: employee.phone || "",
-      role: employee.role || 'user',
+      birthday: formattedBirthday,
     });
   };
 
@@ -252,8 +295,8 @@ export default function EmployeesPage() {
                     id="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="block w-full px-4 py-3 text-base rounded-lg border-emerald-500 bg-slate-50 shadow-sm
-                      focus:border-emerald-500 focus:ring-0 hover:border-emerald-300
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
                       transition-colors duration-200"
                     required
                   />
@@ -276,6 +319,22 @@ export default function EmployeesPage() {
                   />
                 </div>
 
+                {/* Geburtstag */}
+                <div>
+                  <label htmlFor="birthday" className="block text-base font-medium text-slate-700 mb-2">
+                    Geburtstag
+                  </label>
+                  <input
+                    type="date"
+                    name="birthday"
+                    id="birthday"
+                    value={formData.birthday}
+                    onChange={handleInputChange}
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                  />
+                </div>
               </div>
 
               {/* Rechte Spalte */}
@@ -313,24 +372,6 @@ export default function EmployeesPage() {
                       transition-colors duration-200"
                   />
                 </div>
-                {/* Rolle */}
-                <div>
-                  <label htmlFor="role" className="block text-base font-medium text-slate-700 mb-2">
-                    Rolle
-                  </label>
-                  <select
-                    name="role"
-                    id="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                      transition-colors duration-200"
-                  >
-                    <option value="user">Benutzer</option>
-                    <option value="admin">Administrator</option>
-                  </select>
-                </div>
               </div>
             </div>
 
@@ -344,7 +385,7 @@ export default function EmployeesPage() {
                     lastName: '',
                     email: '',
                     phone: '',
-                    role: 'user',
+                    birthday: '',
                   });
                   setEditingEmployee(null);
                 }}
@@ -383,6 +424,9 @@ export default function EmployeesPage() {
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Telefon</div>
                   </th>
                   <th scope="col" className="px-6 py-2 border-b border-slate-200">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Geburtstag</div>
+                  </th>
+                  <th scope="col" className="px-6 py-2 border-b border-slate-200">
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Aktionen</div>
                   </th>
                 </tr>
@@ -405,6 +449,11 @@ export default function EmployeesPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         {employee.phone || '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        {employee.birthday || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
