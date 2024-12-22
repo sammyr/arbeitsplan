@@ -84,11 +84,11 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Mobiltelefon
+              Telefon
             </label>
             <input
               type="tel"
-              {...register('mobilePhone')}
+              {...register('phone')}
               className="mt-1 block w-full rounded-md border-emerald-500 shadow-sm focus:border-emerald-500 focus:ring-0"
             />
           </div>

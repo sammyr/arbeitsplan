@@ -5,9 +5,12 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMon
 import { de } from 'date-fns/locale';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Store } from '@/types/store';
-import { Employee, WorkingShift, ShiftDefinition } from '@/types';
+import { Employee } from '@/types/employee';
+import { ShiftDefinition } from '@/types';
 import { ShiftAssignment } from '@/types/shift-assignment';
 import { dbService } from '@/lib/db';
+import { collection, query, where, doc, getDocs, setDoc, deleteDoc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import ShiftAssignmentModal from '@/components/ShiftAssignmentModal';
@@ -15,8 +18,6 @@ import { exportCalendarToPDF } from '@/utils/pdfUtils';
 import { exportToExcel } from '@/utils/exportUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
-import { collection, query, where, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useLog } from '@/contexts/LogContext';
 import './styles.css';
 
@@ -27,7 +28,8 @@ const loadStoreData = async (
   setEmployees: (employees: Employee[]) => void,
   setShifts: (shifts: ShiftDefinition[]) => void,
   setAssignments: (assignments: ShiftAssignment[]) => void,
-  userId: string
+  userId: string,
+  employeeOrder: string[]
 ) => {
   if (!selectedStore) {
     console.log('No store selected, skipping data load');
@@ -57,34 +59,33 @@ const loadStoreData = async (
       return;
     }
 
-    console.log('Data loading results:', {
-      employees: {
-        count: loadedEmployees.length,
-        sample: loadedEmployees.slice(0, 2)
-      },
-      assignments: {
-        count: loadedAssignments.length,
-        sample: loadedAssignments.slice(0, 2).map(a => ({
-          id: a.id,
-          date: a.date,
-          employeeId: a.employeeId,
-          workHours: a.workHours
-        }))
-      },
-      shifts: {
-        count: loadedShifts.length,
-        sample: loadedShifts.slice(0, 2)
-      }
-    });
-
     // Ensure assignments have proper date objects
     const processedAssignments = loadedAssignments.map(assignment => ({
       ...assignment,
       date: new Date(assignment.date).toISOString().split('T')[0] // Ensure consistent date format
     }));
 
-    // Batch-Update der States
-    setEmployees(loadedEmployees);
+    // Sortiere die Mitarbeiter entsprechend der gespeicherten Reihenfolge
+    if (employeeOrder.length > 0) {
+      const orderedEmployees = [...loadedEmployees].sort((a, b) => {
+        const aIndex = employeeOrder.indexOf(a.id);
+        const bIndex = employeeOrder.indexOf(b.id);
+        
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
+        
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        
+        return 0;
+      });
+      
+      setEmployees(orderedEmployees);
+    } else {
+      setEmployees(loadedEmployees);
+    }
+
     setShifts(loadedShifts);
     setAssignments(processedAssignments);
     setIsLoading(false);
@@ -143,10 +144,11 @@ const Arbeitsplan3Page = memo(() => {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeeOrder, setEmployeeOrder] = useState<string[]>([]);
   const [shifts, setShifts] = useState<ShiftDefinition[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<ShiftAssignment | null>(null);
 
@@ -277,22 +279,27 @@ const Arbeitsplan3Page = memo(() => {
 
   // Lade Daten wenn sich der Store ändert
   useEffect(() => {
-    if (!user) {
-      // If no user, we're either loading or not authenticated
-      console.log('No user available yet');
-      return;
-    }
-
-    if (!selectedStore) {
-      // If no store selected, reset loading state
-      setIsLoading(false);
-      console.log('No store selected');
-      return;
-    }
-
-    console.log('Loading data for store:', selectedStore.id, 'and user:', user.uid);
-    loadStoreData(selectedStore, setIsLoading, setEmployees, setShifts, setAssignments, user.uid);
+    if (!user || !selectedStore) return;
+    loadStoreData(selectedStore, setIsLoading, setEmployees, setShifts, setAssignments, user.uid, employeeOrder);
   }, [selectedStore, user]);
+
+  // Lade die benutzerdefinierte Sortierung
+  useEffect(() => {
+    const loadEmployeeOrder = async () => {
+      if (!selectedStore?.id) return;
+
+      const orderRef = collection(db, 'employeeOrder');
+      const q = query(orderRef, where('storeId', '==', selectedStore.id));
+      const orderSnap = await getDocs(q);
+
+      if (!orderSnap.empty) {
+        const doc = orderSnap.docs[0];
+        setEmployeeOrder(doc.data().order || []);
+      }
+    };
+
+    loadEmployeeOrder();
+  }, [selectedStore?.id]);
 
   // Füge Mitarbeiterdaten zu den Zuweisungen hinzu
   useEffect(() => {
@@ -411,33 +418,33 @@ const Arbeitsplan3Page = memo(() => {
     }
 
     return (
-      <div className="container mx-auto px-2 bg-transparent mt-4">
-        {/* Calendar Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full table-fixed border-separate border-spacing-px bg-slate-200">
-              <colgroup>
-                <col style={{ width: '14.285%' }} />
-                <col style={{ width: '14.285%' }} />
-                <col style={{ width: '14.285%' }} />
-                <col style={{ width: '14.285%' }} />
-                <col style={{ width: '14.285%' }} />
-                <col style={{ width: '14.285%' }} />
-                <col style={{ width: '14.285%' }} />
-              </colgroup>
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Mo</th>
-                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Di</th>
-                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Mi</th>
-                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Do</th>
-                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Fr</th>
-                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Sa</th>
-                  <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">So</th>
-                </tr>
-              </thead>
-              <tbody>
-                <DragDropContext onDragEnd={handleDragEnd}>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="container mx-auto px-2 bg-transparent mt-4">
+          {/* Calendar Table */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full table-fixed border-separate border-spacing-px bg-slate-200">
+                <colgroup>
+                  <col style={{ width: '14.285%' }} />
+                  <col style={{ width: '14.285%' }} />
+                  <col style={{ width: '14.285%' }} />
+                  <col style={{ width: '14.285%' }} />
+                  <col style={{ width: '14.285%' }} />
+                  <col style={{ width: '14.285%' }} />
+                  <col style={{ width: '14.285%' }} />
+                </colgroup>
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Mo</th>
+                    <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Di</th>
+                    <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Mi</th>
+                    <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Do</th>
+                    <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Fr</th>
+                    <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">Sa</th>
+                    <th className="bg-white px-4 py-3 text-sm font-semibold text-slate-900 border-b border-slate-200">So</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {chunk(daysInMonth, 7).map((week, weekIndex) => (
                     <tr key={weekIndex}>
                       {week.map((day, dayIndex) => {
@@ -461,7 +468,6 @@ const Arbeitsplan3Page = memo(() => {
                             const shiftA = shifts.find(s => s.id === a.shiftId);
                             const shiftB = shifts.find(s => s.id === b.shiftId);
                             
-                            // Sortiere nach Priorität (falls vorhanden) oder Titel
                             const priorityA = shiftA?.priority ?? Number.MAX_VALUE;
                             const priorityB = shiftB?.priority ?? Number.MAX_VALUE;
                             
@@ -469,23 +475,20 @@ const Arbeitsplan3Page = memo(() => {
                               return priorityA - priorityB;
                             }
                             
-                            // Falls keine Priorität gesetzt ist oder gleich, sortiere nach Titel
                             const titleA = shiftA?.title || '';
                             const titleB = shiftB?.title || '';
                             return titleA.localeCompare(titleB);
                           });
 
                         return (
-                          <Droppable key={dateStr} droppableId={dateStr}>
+                          <Droppable droppableId={dateStr}>
                             {(provided) => (
                               <td
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                                 className={`px-4 py-3 align-top relative hover:bg-gray-50 transition-colors cursor-pointer border border-slate-200 ${
                                   !isSameMonth(day, currentDate) ? 'bg-slate-100' : 'bg-white'
-                                } ${
-                                  isToday(day) ? 'bg-blue-50' : ''
-                                }`}
+                                } ${isToday(day) ? 'bg-blue-50' : ''}`}
                                 style={{ 
                                   height: '120px',
                                   minHeight: '120px'
@@ -543,7 +546,7 @@ const Arbeitsplan3Page = memo(() => {
                                                 </svg>
                                               </button>
                                             </div>
-                                            <div key={index} 
+                                            <div 
                                               className={`p-1.5 bg-gradient-to-r from-emerald-50/80 via-emerald-50/90 to-emerald-50/80 text-slate-900 rounded-md hover:from-emerald-100/90 hover:via-emerald-100 hover:to-emerald-100/90 transition-all border border-emerald-100/50 shadow-sm`}
                                             >
                                               <div className="flex items-center gap-1">
@@ -572,12 +575,12 @@ const Arbeitsplan3Page = memo(() => {
                       })}
                     </tr>
                   ))}
-                </DragDropContext>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      </DragDropContext>
     );
   };
 
@@ -715,100 +718,66 @@ const Arbeitsplan3Page = memo(() => {
     }
   };
 
-  const handleDragEnd = async (result: DropResult) => {
-    if (isEmployee) return;
-    
-    if (!result.destination || !selectedStore) {
-      console.log('No valid destination or store');
-      return;
-    }
-
-    const { source, destination, draggableId } = result;
-    console.log('Drag details:', {
-      source: source,
-      destination: destination,
-      draggableId: draggableId
-    });
-
-    if (source.droppableId === destination.droppableId) {
-      console.log('Same day, no update needed');
-      return;
-    }
-
-    try {
-      const assignment = assignments.find(a => a.id === draggableId);
-      if (!assignment) {
-        console.log('Assignment not found:', draggableId);
-        return;
-      }
-
-      console.log('Found assignment:', assignment);
-
-      // Optimistische UI-Aktualisierung
-      setAssignments(prev => 
-        prev.map(a => 
-          a.id === draggableId 
-            ? { ...a, date: destination.droppableId }
-            : a
-        )
-      );
-
-      // Erstelle das aktualisierte Assignment
-      const updatedAssignment = {
-        ...assignment,
-        date: destination.droppableId
-      };
-
-      console.log('Updating assignment:', updatedAssignment);
-
-      // Aktualisiere die Zuweisung in der Datenbank
-      if (!user) return;
-      await dbService.updateAssignment(draggableId, updatedAssignment);
-      
-      // Hole Mitarbeiter- und Schichtinformationen für den Log-Eintrag
-      const employee = employees.find(e => e.id === assignment.employeeId);
-      const shift = shifts.find(s => s.id === assignment.shiftId);
-      
-      // Erstelle einen Log-Eintrag für die Verschiebung
-      addLog(
-        'info',
-        'Schicht verschoben',
-        JSON.stringify({
-          mitarbeiter: employee?.firstName || 'Unbekannt',
-          schicht: shift?.title || 'Unbekannt',
-          von: format(new Date(source.droppableId), 'dd.MM.yyyy'),
-          nach: format(new Date(destination.droppableId), 'dd.MM.yyyy'),
-          filiale: selectedStore.name
-        })
-      );
-      
-      console.log('Database update successful');
-      toast.success('Schicht wurde verschoben');
-    } catch (error) {
-      console.error('Error updating assignment:', error);
-      addLog('error', 'Fehler beim Verschieben der Schicht');
-      toast.error('Fehler beim Verschieben der Schicht');
-      
-      // Nur im Fehlerfall die Daten neu laden
-      if (user) {
-        await loadStoreData(selectedStore, setIsLoading, setEmployees, setShifts, setAssignments, user.uid);
-      }
-    }
-  };
-
   const handleExportPDF = async () => {
     if (!selectedStore) {
       toast.error('Bitte wählen Sie zuerst einen Store aus');
       return;
     }
 
+    // Konvertiere die Assignments in Shifts
+    const shiftsFromAssignments = assignments.map(assignment => ({
+      id: assignment.id,
+      title: `${assignment.employeeId} - ${assignment.shiftId}`,
+      workHours: shifts.find(s => s.id === assignment.shiftId)?.workHours || 0,
+      employeeId: assignment.employeeId,
+      date: assignment.date,
+      startTime: shifts.find(s => s.id === assignment.shiftId)?.startTime || '00:00',
+      endTime: shifts.find(s => s.id === assignment.shiftId)?.endTime || '00:00',
+      shiftId: assignment.shiftId,
+      storeId: selectedStore.id,
+      createdAt: assignment.createdAt,
+      updatedAt: assignment.updatedAt
+    }));
+
     try {
+      // Filtere zuerst Mitarbeiter mit Schichten
+      const employeesWithAssignments = employees.filter(emp => 
+        assignments.some(a => a.employeeId === emp.id)
+      );
+
+      // Sortiere die gefilterten Mitarbeiter
+      const sortedEmployees = [...employeesWithAssignments].sort((a, b) => {
+        const aIndex = employeeOrder.indexOf(a.id);
+        const bIndex = employeeOrder.indexOf(b.id);
+        return (aIndex !== -1 && bIndex !== -1) ? aIndex - bIndex : 0;
+      });
+
+      const storeWithState = {
+        ...selectedStore,
+        state: selectedStore.state || 'Brandenburg'
+      };
+
+      // Konvertiere die ShiftDefinitions in Shifts
+      const shiftsFromDefinitions = shifts.map(shift => ({
+        id: shift.id,
+        title: shift.title,
+        workHours: shift.workHours,
+        employeeId: '',
+        date: '',
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        shiftId: shift.id,
+        storeId: selectedStore.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }));
+
       await exportCalendarToPDF(
-        assignments,
-        employees,
-        shifts,
+        shiftsFromAssignments,
+        sortedEmployees,
+        shiftsFromDefinitions,
         currentDate,
-        selectedStore.name
+        storeWithState
       );
       toast.success('PDF wurde erfolgreich erstellt');
     } catch (error) {
@@ -824,9 +793,21 @@ const Arbeitsplan3Page = memo(() => {
     }
 
     try {
+      // Filtere zuerst Mitarbeiter mit Schichten
+      const employeesWithAssignments = employees.filter(emp => 
+        assignments.some(a => a.employeeId === emp.id)
+      );
+
+      // Sortiere die gefilterten Mitarbeiter
+      const sortedEmployees = [...employeesWithAssignments].sort((a, b) => {
+        const aIndex = employeeOrder.indexOf(a.id);
+        const bIndex = employeeOrder.indexOf(b.id);
+        return (aIndex !== -1 && bIndex !== -1) ? aIndex - bIndex : 0;
+      });
+
       exportToExcel(
         assignments,
-        employees,
+        sortedEmployees,
         shifts,
         currentDate,
         selectedStore.name
@@ -837,12 +818,80 @@ const Arbeitsplan3Page = memo(() => {
     }
   };
 
+  const handleDragEnd = async (result: DropResult) => {
+    if (isEmployee) return;
+    
+    if (!result.destination || !selectedStore) {
+      console.log('No valid destination or store');
+      return;
+    }
+
+    const { source, destination, draggableId } = result;
+
+    if (source.droppableId === destination.droppableId) {
+      console.log('Same day, no update needed');
+      return;
+    }
+
+    try {
+      const assignment = assignments.find(a => a.id === draggableId);
+      if (!assignment) {
+        console.log('Assignment not found:', draggableId);
+        return;
+      }
+
+      // Optimistische UI-Aktualisierung
+      setAssignments(prev => 
+        prev.map(a => 
+          a.id === draggableId 
+            ? { ...a, date: destination.droppableId }
+            : a
+        )
+      );
+
+      // Erstelle das aktualisierte Assignment
+      const updatedAssignment = {
+        ...assignment,
+        date: destination.droppableId,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Aktualisiere die Zuweisung in der Datenbank
+      if (!user) return;
+      await dbService.updateAssignment(draggableId, updatedAssignment);
+      
+      const employee = employees.find(e => e.id === assignment.employeeId);
+      const shift = shifts.find(s => s.id === assignment.shiftId);
+      
+      addLog(
+        'info',
+        'Schicht verschoben',
+        JSON.stringify({
+          mitarbeiter: employee?.firstName || 'Unbekannt',
+          schicht: shift?.title || 'Unbekannt',
+          von: format(new Date(source.droppableId), 'dd.MM.yyyy'),
+          nach: format(new Date(destination.droppableId), 'dd.MM.yyyy'),
+          filiale: selectedStore.name
+        })
+      );
+      
+      toast.success('Schicht wurde verschoben');
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      addLog('error', 'Fehler beim Verschieben der Schicht');
+      toast.error('Fehler beim Verschieben der Schicht');
+      
+      if (user) {
+        await loadStoreData(selectedStore, setIsLoading, setEmployees, setShifts, setAssignments, user.uid, employeeOrder);
+      }
+    }
+  };
+
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
   // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
   // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
   // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
-  // 
   // Die Berechnung MUSS tageweise erfolgen:
   // 1. Für jeden Tag im Monat werden die Schichten des Mitarbeiters gefiltert
   // 2. Nur aktive Schichten (ohne excludeFromCalculations) werden berücksichtigt
@@ -877,36 +926,25 @@ const Arbeitsplan3Page = memo(() => {
       // Addiere nur die Stunden von aktiven Schichten
       const dayHours = dayAssignments.reduce((sum, a) => {
         const shift = shifts.find(s => s.id === a.shiftId);
-        return shift?.excludeFromCalculations ? sum : sum + (a.workHours || 0);
+        if (!shift || shift.excludeFromCalculations) return sum;
+        return sum + (a.workHours || 0);
       }, 0);
 
       totalHours += dayHours;
     });
 
-    return totalHours;
+    // Runde auf eine Dezimalstelle
+    return Math.round(totalHours * 10) / 10;
   };
 
-  // Berechne die Gesamtstunden für einen Mitarbeiter
-  const calculateTotalHours = (employeeId: string) => {
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
-    // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
-    // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
-    // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
-    // Diese Logik ist essentiell für die korrekte Arbeitszeiterfassung!
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    const employeeAssignments = assignments.filter((a) => a.employeeId === employeeId);
-    return employeeAssignments.reduce((total, assignment) => {
-      const shift = shifts.find(s => s.id === assignment.shiftId);
-      return shift?.excludeFromCalculations ? total : total + (assignment.workHours || 0);
-    }, 0);
-  };
-
+  // Berechne die Gesamtstunden aller Mitarbeiter
   const calculateTotalHoursAll = () => {
-    return employees.reduce((total, employee) => {
-      return total + calculateTotalHours(employee.id);
-    }, 0);
+    const total = employees
+      .filter(employee => calculateEmployeeHours(employee.id) > 0)
+      .reduce((sum, employee) => sum + calculateEmployeeHours(employee.id), 0);
+    
+    // Runde auf eine Dezimalstelle
+    return Math.round(total * 10) / 10;
   };
 
   const handleStoreChange = (storeId: string) => {
@@ -970,6 +1008,7 @@ const Arbeitsplan3Page = memo(() => {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
+
                       </button>
 
                       <select
@@ -1050,71 +1089,88 @@ const Arbeitsplan3Page = memo(() => {
                 </div>
               </div>
 
-              {/* Calendar Grid */}
-              <div id="calendar-container" className="calendar-container bg-white rounded-xl shadow-sm p-4 md:p-6 overflow-x-auto" style={{ minWidth: '1000px', maxWidth: '1400px', margin: '0 auto' }}>
-                {renderCalendar()}
-              </div>
+              {/* Kalender */}
+              {renderCalendar()}
 
-              {/* Übersichtstabelle */}
-              <div className="mt-8">
-                <h2 className="text-xl font-semibold mb-4">Arbeitsstunden Übersicht</h2>
-                <table className="min-w-full border-separate border-spacing-0">
-                  <thead>
-                    <tr>
-                      <th className="text-left bg-gray-50 px-4 py-2 border-b border-gray-200 text-gray-500 uppercase tracking-wider font-medium text-sm">
-                        Mitarbeiter
-                      </th>
-                      <th className="text-right bg-gray-50 px-4 py-2 border-b border-gray-200 text-gray-500 uppercase tracking-wider font-medium text-sm">
-                        Stunden
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {employees
-                      .filter(employee => calculateEmployeeHours(employee.id) > 0)
-                      .map((employee) => {
-                      const totalHours = calculateEmployeeHours(employee.id);
-                      return (
-                        <tr key={employee.id}>
-                          <td className="px-4 py-2 border-b border-gray-200">
-                            {employee.firstName} {employee.lastName}
+              {/* Arbeitsstunden Übersicht */}
+              <div className="mt-12 mb-6 relative" style={{ minHeight: '200px' }}>
+                <h2 className="text-lg font-semibold mb-4">
+                  Arbeitsstunden Übersicht - {selectedStore?.name || 'Keine Filiale ausgewählt'}
+                </h2>
+                <div className="overflow-x-auto">
+                  <div className="inline-block min-w-full align-middle">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Mitarbeiter
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Stunden
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {employees
+                          .filter(employee => calculateEmployeeHours(employee.id) > 0)
+                          .sort((a, b) => {
+                            const aIndex = employeeOrder.indexOf(a.id);
+                            const bIndex = employeeOrder.indexOf(b.id);
+                            
+                            if (aIndex !== -1 && bIndex !== -1) {
+                              return aIndex - bIndex;
+                            }
+                            
+                            return calculateEmployeeHours(b.id) - calculateEmployeeHours(a.id);
+                          })
+                          .map((employee) => (
+                            <tr key={employee.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {employee.firstName} {employee.lastName}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {calculateEmployeeHours(employee.id)}h
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap font-medium">
+                            Gesamt
                           </td>
-                          <td className="px-4 py-2 border-b border-gray-200 text-right">
-                            {totalHours.toFixed(1)} Stunden
+                          <td className="px-6 py-4 whitespace-nowrap font-medium">
+                            {calculateTotalHoursAll()}h
                           </td>
                         </tr>
-                      );
-                    })}
-                    <tr>
-                      <td className="px-4 py-2 border-b border-gray-200 font-medium">
-                        Gesamt
-                      </td>
-                      <td className="px-4 py-2 border-b border-gray-200 text-right font-medium">
-                        {employees.reduce((total, employee) => total + calculateEmployeeHours(employee.id), 0).toFixed(1)} Stunden
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Modal */}
-            {!isEmployee && isModalOpen && selectedDate && (
-              <ShiftAssignmentModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                  setIsModalOpen(false);
-                  setEditingAssignment(null);
-                }}
-                onSave={handleAssignmentSave}
-                employees={employees}
-                shifts={shifts}
-                date={selectedDate}
-                initialEmployeeId={editingAssignment?.employeeId}
-                initialShiftId={editingAssignment?.shiftId}
-                initialWorkHours={editingAssignment?.workHours || 8}
-              />
-            )}
+              {/* Modal */}
+              {!isEmployee && isModalOpen && selectedDate && (
+                <ShiftAssignmentModal
+                  isOpen={isModalOpen}
+                  onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingAssignment(null);
+                  }}
+                  onSave={handleAssignmentSave}
+                  employees={employees}
+                  shifts={shifts}
+                  date={selectedDate}
+                  initialEmployeeId={editingAssignment?.employeeId}
+                  initialShiftId={editingAssignment?.shiftId}
+                  initialWorkHours={editingAssignment?.workHours || 8}
+                />
+              )}
+            </div>
           </div>
         </main>
       </div>

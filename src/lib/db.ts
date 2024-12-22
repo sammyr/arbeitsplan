@@ -48,9 +48,11 @@ const dbService = {
         return {
           id: doc.id,
           name: data.name || '',
-          address: data.address || '',
-          phone: data.phone || '',
-          email: data.email || '',
+          street: data.street || '',
+          houseNumber: data.houseNumber || '',
+          zipCode: data.zipCode || '',
+          city: data.city || '',
+          state: data.state || '',
           organizationId: data.organizationId,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt
@@ -197,7 +199,6 @@ const dbService = {
       // Stelle sicher, dass das Geburtsdatum gespeichert wird
       const employeeData = {
         ...employee,
-        birthday: employee.birthday || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -234,11 +235,10 @@ const dbService = {
       const currentData = docSnap.data();
       console.log('Current employee data:', JSON.stringify(currentData, null, 2));
 
-      // Stelle sicher, dass die organizationId und das Geburtsdatum nicht verloren gehen
+      // Stelle sicher, dass die organizationId nicht verloren geht
       const updateData = {
         ...employeeData,
         organizationId: employeeData.organizationId || currentData.organizationId,
-        birthday: employeeData.birthday ?? currentData.birthday ?? '',
         updatedAt: new Date().toISOString()
       };
 
@@ -321,7 +321,6 @@ const dbService = {
           mobilePhone: data.mobilePhone || '',
           role: data.role || '',
           storeId: data.storeId || '',
-          birthday: data.birthday || '',
           organizationId: data.organizationId,
           isActive: data.isActive !== false,
           createdAt: data.createdAt,

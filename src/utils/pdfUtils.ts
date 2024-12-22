@@ -1,18 +1,93 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
-import { format, startOfMonth, endOfMonth, addDays, eachDayOfInterval, getDay } from 'date-fns';
+import { format, parse, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { toast } from 'react-hot-toast';
-import { Employee, ShiftDefinition } from '@/types';
-import { ShiftAssignment } from '@/types/shift-assignment';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Employee } from '@/types/employee';
+import { ShiftAssignment } from '@/types/shiftAssignment';
+import { ShiftDefinition } from '@/types/shiftDefinition';
+import { Store } from '@/types/store';
+import { Holiday, isHoliday } from '@/types/holiday';
+import { holidays } from '@/data/holidays';
+
+// Farben für die Tage (RGB-Format für jsPDF)
+const dayColors = {
+  weekday: [255, 255, 255] as [number, number, number],    // Weiß für normale Tage
+  saturday: [255, 235, 59] as [number, number, number],    // Gelb für Samstag
+  sunday: [76, 175, 80] as [number, number, number],       // Grün für Sonntag
+  holiday: [255, 82, 82] as [number, number, number]       // Rot für Feiertage
+};
+
+// Funktion zum Konvertieren von RGB zu Hex
+const rgbToHex = (r: number, g: number, b: number): string => {
+  return '#' + [r, g, b].map(x => {
+    const hex = x.toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  }).join('');
+};
+
+// Funktion zum Bestimmen der Hintergrundfarbe
+const getDayBackgroundColor = (date: Date, store: Store): number[] => {
+  try {
+    // Prüfe zuerst auf Feiertage
+    const holiday = isHoliday(date, store.state, holidays);
+    if (holiday) {
+      console.log(`Feiertag gefunden: ${holiday.name} am ${format(date, 'dd.MM.yyyy')} in ${store.state}`);
+      return dayColors.holiday;
+    }
+
+    // Wenn kein Feiertag, prüfe auf Wochenende
+    const day = date.getDay();
+    if (day === 6) return dayColors.saturday;  // Samstag
+    if (day === 0) return dayColors.sunday;    // Sonntag
+    return dayColors.weekday;
+  } catch (error) {
+    console.error('Fehler in getDayBackgroundColor:', error);
+    return dayColors.weekday; // Fallback auf normalen Wochentag
+  }
+};
+
+// Helper-Funktionen
+const formatTime = (time: string) => {
+  if (!time) return '00:00';
+  // Entferne mögliche Leerzeichen
+  time = time.trim();
+  // Wenn das Format bereits HH:mm ist, gib es direkt zurück
+  if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+    return time.padStart(5, '0'); // Stelle sicher, dass es im Format HH:mm ist
+  }
+  try {
+    // Versuche das Datum zu parsen
+    const [hours, minutes] = time.split(':');
+    return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return '00:00';
+  }
+};
+
+const formatDate = (date: Date) => {
+  return format(date, 'dd.MM.yyyy', { locale: de });
+};
+
+const getDayName = (date: Date) => {
+  return format(date, 'EEEE', { locale: de });
+};
+
+const getMonthName = (date: Date) => {
+  return format(date, 'MMMM yyyy', { locale: de });
+};
+
+const getEmployeeName = (employeeId: string, employees: Employee[]) => {
+  const employee = employees.find(e => e.id === employeeId);
+  return employee ? `${employee.firstName} ${employee.lastName}` : '';
+};
 
 export const exportCalendarToPDF = async (
   assignments: ShiftAssignment[],
   employees: Employee[],
   shifts: ShiftDefinition[],
   currentDate: Date,
-  storeName: string
+  store: Store
 ) => {
   try {
     console.log('Starte PDF Export mit:', {
@@ -20,7 +95,7 @@ export const exportCalendarToPDF = async (
       employees: employees.length,
       shifts: shifts.length,
       currentDate: currentDate.toISOString(),
-      storeName
+      storeName: store.name
     });
 
     // Erstelle PDF im Querformat
@@ -30,221 +105,146 @@ export const exportCalendarToPDF = async (
       format: 'a4'
     });
 
-    // Setze kleinere Seitenränder
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-    const margin = 10; // 10mm Rand
+    try {
+      // Setze kleinere Seitenränder
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 10;
 
-    // Titel des Dokuments
-    const month = format(currentDate, 'MMMM yyyy', { locale: de });
-    const title = `Dienstplan - ${month}`;
-    
-    // Titel zentriert und größer
-    doc.setFontSize(24); // 10px größer als vorher
-    doc.setFont('helvetica', 'bold');
-    const titleWidth = doc.getTextWidth(title);
-    const pageCenter = pageWidth / 2;
-    doc.text(title, pageCenter, 20, { align: 'center' });
-    
-    // Zurück zur normalen Schriftgröße für den Rest des Dokuments
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
+      // Titel
+      const month = format(currentDate, 'MMMM yyyy', { locale: de });
+      const title = store?.name ? `Dienstplan ${store.name} - ${month}` : `Dienstplan - ${month}`;
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      const titleWidth = doc.getTextWidth(title);
+      const pageCenter = pageWidth / 2;
+      doc.text(title, pageCenter, 20, { align: 'center' });
 
-    // Berechne verfügbare Breite für die Tabelle
-    const tableWidth = pageWidth - (2 * margin);
-    
-    // Tage des Monats
-    const startOfMonthDate = startOfMonth(currentDate);
-    const endOfMonthDate = endOfMonth(currentDate);
-    const days: Date[] = [];
-    let currentDay = startOfMonthDate;
-    
-    while (currentDay <= endOfMonthDate) {
-      days.push(currentDay);
-      currentDay = addDays(currentDay, 1);
-    }
+      // Tage des Monats
+      const startOfMonthDate = startOfMonth(currentDate);
+      const endOfMonthDate = endOfMonth(currentDate);
+      const days = eachDayOfInterval({ 
+        start: startOfMonthDate || new Date(), 
+        end: endOfMonthDate || new Date() 
+      });
 
-    console.log('Erstelle Tabellendaten...');
-
-    // Tabellenkopf erstellen
-    const headers = [
-      'Mitarbeiter',
-      ...days.map(day => format(day, 'd')), // Nur den Tag als Zahl
-      'G'
-    ];
-
-    // Debug-Ausgabe für Wochenenden
-    days.forEach(day => {
-      const dayNum = format(day, 'd');
-      const dayOfWeek = getDay(day);
-      if (dayOfWeek === 0 || dayOfWeek === 6) {
-        console.log(`Tag ${dayNum} ist ein ${dayOfWeek === 0 ? 'Sonntag' : 'Samstag'}`);
+      // Validiere Input-Arrays
+      if (!Array.isArray(assignments) || !Array.isArray(employees) || !Array.isArray(shifts)) {
+        throw new Error('Ungültige Eingabedaten: assignments, employees und shifts müssen Arrays sein');
       }
-    });
 
-    // Tabellendaten vorbereiten
-    const tableData = employees
-      .map(employee => {
-        let totalHours = 0;
-        const rowData = days.map(day => {
-          const dateStr = format(day, 'yyyy-MM-dd');
+      // Tabellenkopf erstellen
+      const headers = [
+        'Name',
+        ...days.map(day => format(day, 'd'))
+      ];
 
-          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
-          // Die Schichten an Wochenenden (Samstag/Sonntag) MÜSSEN immer angezeigt werden!
-          // Diese Tage sind für die Dienstplanung essentiell und dürfen niemals ausgeblendet,
-          // gefiltert oder anderweitig modifiziert werden.
-          // Änderungen an dieser Logik können zu fehlerhafter Dienstplanung führen!
-          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      // Tabellendaten vorbereiten
+      const tableData = employees
+        .filter(employee => employee && typeof employee.id === 'string')
+        .map(employee => {
+          const rowData = days.map(day => {
+            const dateStr = format(day, 'yyyy-MM-dd');
+            try {
+              const dayAssignments = assignments.filter(a => 
+                a && a.date && 
+                format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
+                a.employeeId === employee.id
+              );
 
-          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
-          // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
-          // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
-          // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
-          // Diese Logik ist essentiell für die korrekte Arbeitszeiterfassung!
-          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              if (!dayAssignments || dayAssignments.length === 0) return '';
 
-          const dayAssignments = assignments.filter(a => 
-            format(new Date(a.date), 'yyyy-MM-dd') === dateStr && 
-            a.employeeId === employee.id
-          );
+              return dayAssignments
+                .map(a => shifts.find(s => s?.id === a.shiftId)?.title || '')
+                .filter(title => title)
+                .join('\n');
+            } catch (error) {
+              console.error(`Fehler bei der Verarbeitung des Tages ${dateStr}:`, error);
+              return '';
+            }
+          });
 
-          // Stunden nur für aktive Schichten addieren
-          totalHours += dayAssignments.reduce((sum, a) => {
-            const shift = shifts.find(s => s.id === a.shiftId);
-            return shift?.excludeFromCalculations ? sum : sum + (a.workHours || 0);
-          }, 0);
+          // Prüfe, ob der Mitarbeiter tatsächliche Schichteinträge hat
+          const hasActualShifts = rowData.some(entry => entry !== '');
+          if (!hasActualShifts) return null;
 
-          // Wenn keine Schichten, leeren String zurückgeben
-          if (dayAssignments.length === 0) return '';
+          return [
+            employee.firstName || '',
+            ...rowData
+          ];
+        })
+        .filter(row => row !== null);
 
-          // Schichten für diesen Tag
-          return dayAssignments
-            .map(a => shifts.find(s => s.id === a.shiftId)?.title || '')
-            .filter(title => title)
-            .join('\n');
-        });
+      if (tableData.length === 0) {
+        console.warn('Keine gültigen Daten für die Tabelle gefunden');
+      }
 
-        // Nur Mitarbeiter mit mindestens einer Schicht aufnehmen
-        if (totalHours === 0) return null;
-
-        return [
-          employee.firstName,
-          ...rowData,
-          ''
-        ];
-    
-      })
-      .filter(row => row !== null);
-
-    console.log('Erstelle Spaltenköpfe...');
-
-    console.log('Erstelle Tabelle...');
-
-    // Tabelle erstellen
-    autoTable(doc, {
-      head: [headers],
-      body: tableData,
-      startY: 40,
-      theme: 'grid',
-      tableWidth: tableWidth,
-      margin: { left: margin, right: margin },
-      styles: {
-        fontSize: 13,
-        fontStyle: 'bold',
-        cellPadding: 1,
-        overflow: 'linebreak',
-        halign: 'center',
-        valign: 'middle',
-        lineWidth: 0.1,
-        minCellHeight: 10,
-        fillColor: [255, 255, 255],
-        font: 'helvetica',
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontSize: 11,
-        fontStyle: 'normal',
-        font: 'helvetica'
-      },
-      columnStyles: {
-        0: { // Mitarbeiterspalte
-          cellWidth: tableWidth * 0.10,
-          halign: 'left',
-          fontStyle: 'bold',
-          fontSize: 13,
-          font: 'helvetica'
+      // Tabelle erstellen
+      autoTable(doc, {
+        head: [headers],
+        body: tableData,
+        startY: 35,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: 0.8,
+          overflow: 'linebreak',
+          halign: 'center',
+          valign: 'middle',
+          lineWidth: 0.01,
+          minCellHeight: 10
         },
-        [headers.length - 1]: { // Gesamtspalte (G)
-          fontSize: 13,
-          fontStyle: 'bold',
-          cellWidth: tableWidth * 0.06,
-          overflow: 'visible',
-          font: 'helvetica'
-        }
-      },
-      didParseCell: function(data) {
-        data.cell.styles.overflow = 'linebreak';
-        data.cell.styles.cellPadding = 1;
-        data.cell.styles.valign = 'middle';
-        
-        // Setze die Ausrichtung für die Mitarbeiterspalte
-        if (data.column.index === 0) {
-          data.cell.styles.halign = 'left';
-          if (data.section === 'body') {
-            data.cell.styles.fontSize = 10;
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.font = 'helvetica';
-          }
-        } else if (data.section === 'body' || data.section === 'head') {
-          // Für alle anderen Spalten
-          if (data.column.index > 0 && data.column.index < headers.length - 1) {
-            const daysWidth = (tableWidth * 0.80) / days.length;
-            data.cell.styles.cellWidth = daysWidth;
-            data.cell.styles.halign = 'center';
+        headStyles: {
+          fillColor: [255, 255, 255],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold'
+        },
+        columnStyles: {
+          0: { 
+            cellWidth: 20,
+            halign: 'left',
+            fontStyle: 'bold'
+          },
+          ...Object.fromEntries(
+            days.map((_, index) => [index + 1, { 
+              cellWidth: (pageWidth - 45) / days.length,
+              halign: 'center'
+            }])
+          )
+        },
+        didParseCell: function(data) {
+          try {
+            // Überspringen der ersten Spalte (Mitarbeiternamen)
+            if (data.column.index === 0) return;
+
+            const dayIndex = data.column.index - 1;
+            if (dayIndex < 0 || dayIndex >= days.length) return;
             
-            if (data.section === 'head') {
-              data.cell.styles.fontSize = 11;
-              data.cell.styles.fontStyle = 'normal';
-              data.cell.styles.font = 'helvetica';
-            } else {
-              data.cell.styles.fontSize = 13;
-              data.cell.styles.fontStyle = 'bold'; 
-              data.cell.styles.font = 'helvetica';
+            const currentDate = days[dayIndex];
+            const dayOfWeek = currentDate.getDay();
+            const holiday = isHoliday(currentDate, store.state, holidays);
 
-            }
-
-            // Prüfe auf Wochenende
-            const day = days[data.column.index - 1];
-            const dayOfWeek = getDay(day);
-            if (dayOfWeek === 6) { // Samstag
-              data.cell.styles.fillColor = [255, 255, 200];
+            if (holiday) {
+              data.cell.styles.fillColor = dayColors.holiday;
             } else if (dayOfWeek === 0) { // Sonntag
-              data.cell.styles.fillColor = [220, 255, 220];
+              data.cell.styles.fillColor = dayColors.sunday;
+            } else if (dayOfWeek === 6) { // Samstag
+              data.cell.styles.fillColor = dayColors.saturday;
             }
+          } catch (error) {
+            console.error('Fehler in didParseCell:', error);
           }
         }
-      },
-      willDrawCell: function(data) {
-        // Hier können wir zusätzliche Anpassungen vornehmen, bevor die Zelle gezeichnet wird
-        if (data.section === 'body' || data.section === 'head') {
-          if (data.column.index > 0 && data.column.index < headers.length - 1) {
-            const day = days[data.column.index - 1];
-            const dayOfWeek = getDay(day);
-            
-            // Setze die Textfarbe immer auf Schwarz
-            data.cell.styles.textColor = [0, 0, 0];
-          }
-        }
-      }
-    });
+      });
 
-    console.log('Speichere PDF...');
-    doc.save(`Dientsplan_${storeName}_${month}.pdf`);
-    console.log('PDF erfolgreich erstellt!');
+      // Speichere die PDF
+      doc.save(`Dienstplan_${store.name}_${format(currentDate, 'yyyy-MM')}.pdf`);
+      console.log('PDF erfolgreich erstellt!');
 
+    } catch (error) {
+      console.error('Fehler beim Erstellen der PDF:', error);
+      throw error;
+    }
   } catch (error) {
     console.error('Fehler beim Erstellen der PDF:', error);
     throw error;

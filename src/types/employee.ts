@@ -1,13 +1,22 @@
-export interface Employee {
+export interface EmployeeOrder {
   id: string;
-  firstName: string;
-  lastName?: string;
-  email?: string;
-  mobilePhone?: string;
-  isActive?: boolean;
-  storeId?: string;
-  organizationId: string;
+  userId: string;
+  employeeIds: string[];
   createdAt: string;
   updatedAt: string;
-  birthday?: string;
+}
+
+export interface Employee {
+  id: string;
+  organizationId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  role: 'admin' | 'user';
+  createdAt: string;
+  updatedAt: string;
+  targetHours?: number;
+  color?: string;
+  order?: number;
 }

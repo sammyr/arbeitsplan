@@ -9,26 +9,25 @@ import { auth, db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 
-interface EmployeeFormData {
+interface FormData {
   firstName: string;
   lastName: string;
   email: string;
-  mobilePhone: string;
-  role?: string;
+  phone: string;
+  role: 'admin' | 'user';
   storeId?: string;
-  birthday?: string;
 }
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<EmployeeFormData>({
+  const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     email: '',
-    mobilePhone: '',
-    birthday: '',
+    phone: '',
+    role: 'user',
   });
 
   const { user } = useAuth();
@@ -61,78 +60,10 @@ export default function EmployeesPage() {
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'mobilePhone') {
-      // Entferne alle nicht erlaubten Zeichen, aber erlaube + am Anfang
-      let cleaned = value.replace(/[^\d+]/g, '');
-      
-      // Erlaube + nur am Anfang
-      if (cleaned.indexOf('+') > 0) {
-        cleaned = cleaned.replace(/\+/g, '');
-      }
-      
-      // Formatiere die Nummer
-      if (cleaned.length > 0) {
-        let formatted = cleaned;
-        
-        // Wenn keine Vorwahl angegeben ist, füge +49 hinzu
-        if (!cleaned.startsWith('+')) {
-          if (cleaned.startsWith('00')) {
-            formatted = '+' + cleaned.substring(2);
-          } else if (cleaned.startsWith('0')) {
-            formatted = '+49' + cleaned.substring(1);
-          } else {
-            formatted = '+49' + cleaned;
-          }
-        }
-        
-        // Füge Leerzeichen für bessere Lesbarkeit ein
-        formatted = formatted.replace(/(\+\d{2})(\d{3})(\d{3,4})(\d{4})/, '$1 $2 $3 $4');
-        
-        setFormData(prev => ({ ...prev, [name]: formatted }));
-      } else {
-        setFormData(prev => ({ ...prev, [name]: '' }));
-      }
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const formatPhoneNumber = (phone: string) => {
-    if (!phone) return '';
-    
-    // Entferne alle nicht erlaubten Zeichen, aber erlaube + am Anfang
-    let cleaned = phone.replace(/[^\d+]/g, '');
-    
-    // Erlaube + nur am Anfang
-    if (cleaned.indexOf('+') > 0) {
-      cleaned = cleaned.replace(/\+/g, '');
-    }
-    
-    // Formatiere die Nummer
-    if (cleaned.length > 0) {
-      let formatted = cleaned;
-      
-      // Wenn keine Vorwahl angegeben ist, füge +49 hinzu
-      if (!cleaned.startsWith('+')) {
-        if (cleaned.startsWith('00')) {
-          formatted = '+' + cleaned.substring(2);
-        } else if (cleaned.startsWith('0')) {
-          formatted = '+49' + cleaned.substring(1);
-        } else {
-          formatted = '+49' + cleaned;
-        }
-      }
-      
-      // Füge Leerzeichen für bessere Lesbarkeit ein
-      formatted = formatted.replace(/(\+\d{2})(\d{3})(\d{3,4})(\d{4})/, '$1 $2 $3 $4');
-      
-      return formatted;
-    }
-    
-    return phone;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,7 +91,6 @@ export default function EmployeesPage() {
         const updateData = {
           ...employeeData,
           firstName: employeeData.firstName || editingEmployee.firstName,
-          birthday: employeeData.birthday || editingEmployee.birthday,
           organizationId: user.uid,
         };
         
@@ -195,8 +125,8 @@ export default function EmployeesPage() {
         firstName: '',
         lastName: '',
         email: '',
-        mobilePhone: '',
-        birthday: '',
+        phone: '',
+        role: 'user',
       });
       setEditingEmployee(null);
     } catch (error) {
@@ -216,8 +146,8 @@ export default function EmployeesPage() {
       firstName: employee.firstName,
       lastName: employee.lastName || "",
       email: employee.email || "",
-      mobilePhone: employee.mobilePhone || "",
-      birthday: employee.birthday,
+      phone: employee.phone || "",
+      role: employee.role || 'user',
     });
   };
 
@@ -346,22 +276,6 @@ export default function EmployeesPage() {
                   />
                 </div>
 
-                {/* Geburtstag */}
-                <div>
-                  <label htmlFor="birthday" className="block text-base font-medium text-slate-700 mb-2">
-                    Geburtstag
-                  </label>
-                  <input
-                    type="date"
-                    name="birthday"
-                    id="birthday"
-                    value={formData.birthday || ''}
-                    onChange={handleInputChange}
-                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                      transition-colors duration-200"
-                  />
-                </div>
               </div>
 
               {/* Rechte Spalte */}
@@ -383,21 +297,39 @@ export default function EmployeesPage() {
                   />
                 </div>
 
-                {/* Mobiltelefon */}
+                {/* Telefon */}
                 <div>
-                  <label htmlFor="mobilePhone" className="block text-base font-medium text-slate-700 mb-2">
-                    Mobiltelefon
+                  <label htmlFor="phone" className="block text-base font-medium text-slate-700 mb-2">
+                    Telefon
                   </label>
                   <input
                     type="tel"
-                    name="mobilePhone"
-                    id="mobilePhone"
-                    value={formData.mobilePhone}
+                    name="phone"
+                    id="phone"
+                    value={formData.phone}
                     onChange={handleInputChange}
                     className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
                       focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
                       transition-colors duration-200"
                   />
+                </div>
+                {/* Rolle */}
+                <div>
+                  <label htmlFor="role" className="block text-base font-medium text-slate-700 mb-2">
+                    Rolle
+                  </label>
+                  <select
+                    name="role"
+                    id="role"
+                    value={formData.role}
+                    onChange={handleInputChange}
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                  >
+                    <option value="user">Benutzer</option>
+                    <option value="admin">Administrator</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -411,8 +343,8 @@ export default function EmployeesPage() {
                     firstName: '',
                     lastName: '',
                     email: '',
-                    mobilePhone: '',
-                    birthday: '',
+                    phone: '',
+                    role: 'user',
                   });
                   setEditingEmployee(null);
                 }}
@@ -448,10 +380,7 @@ export default function EmployeesPage() {
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">E-Mail</div>
                   </th>
                   <th scope="col" className="px-6 py-2 border-b border-slate-200">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Mobiltelefon</div>
-                  </th>
-                  <th scope="col" className="px-6 py-2 border-b border-slate-200">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Geburtstag</div>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-left">Telefon</div>
                   </th>
                   <th scope="col" className="px-6 py-2 border-b border-slate-200">
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Aktionen</div>
@@ -475,18 +404,7 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
-                        {employee.mobilePhone ? (
-                          <a href={`tel:${employee.mobilePhone.replace(/\s/g, '')}`} className="text-emerald-600 hover:text-emerald-800">
-                            {formatPhoneNumber(employee.mobilePhone)}
-                          </a>
-                        ) : (
-                          '-'
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {employee.birthday || '-'}
+                        {employee.phone || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

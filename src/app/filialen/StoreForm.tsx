@@ -13,6 +13,25 @@ interface StoreFormProps {
   onClose: () => void;
 }
 
+const germanStates = [
+  'Baden-Württemberg',
+  'Bayern',
+  'Berlin',
+  'Brandenburg',
+  'Bremen',
+  'Hamburg',
+  'Hessen',
+  'Mecklenburg-Vorpommern',
+  'Niedersachsen',
+  'Nordrhein-Westfalen',
+  'Rheinland-Pfalz',
+  'Saarland',
+  'Sachsen',
+  'Sachsen-Anhalt',
+  'Schleswig-Holstein',
+  'Thüringen',
+];
+
 export default function StoreForm({ store, onClose }: StoreFormProps) {
   const { addStore, updateStore } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,9 +39,11 @@ export default function StoreForm({ store, onClose }: StoreFormProps) {
   const { register, handleSubmit, formState: { errors } } = useForm<StoreFormData>({
     defaultValues: store ? {
       name: store.name,
-      address: store.address,
-      phone: store.phone || '',
-      email: store.email || '',
+      street: store.street,
+      houseNumber: store.houseNumber,
+      zipCode: store.zipCode,
+      city: store.city,
+      state: store.state
     } : undefined
   });
 
@@ -36,10 +57,10 @@ export default function StoreForm({ store, onClose }: StoreFormProps) {
         await addStore({ ...data, createdAt: now, updatedAt: now });
       }
       onClose();
-      toast.success(store ? 'Store updated successfully' : 'Store added successfully');
+      toast.success(store ? 'Filiale erfolgreich aktualisiert' : 'Filiale erfolgreich hinzugefügt');
     } catch (error) {
       console.error('Error saving store:', error);
-      toast.error('Error saving store');
+      toast.error('Fehler beim Speichern der Filiale');
     } finally {
       setIsSubmitting(false);
     }
@@ -49,12 +70,12 @@ export default function StoreForm({ store, onClose }: StoreFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Store Name
+          Filialname
         </label>
         <input
           type="text"
           id="name"
-          {...register('name', { required: 'Store name is required' })}
+          {...register('name', { required: 'Filialname ist erforderlich' })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
         {errors.name && (
@@ -63,49 +84,83 @@ export default function StoreForm({ store, onClose }: StoreFormProps) {
       </div>
 
       <div>
-        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-          Address
+        <label htmlFor="street" className="block text-sm font-medium text-gray-700">
+          Straße
         </label>
         <input
           type="text"
-          id="address"
-          {...register('address', { required: 'Address is required' })}
+          id="street"
+          {...register('street', { required: 'Straße ist erforderlich' })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
-        {errors.address && (
-          <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
+        {errors.street && (
+          <p className="mt-1 text-sm text-red-600">{errors.street.message}</p>
         )}
       </div>
 
       <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-          Phone
+        <label htmlFor="houseNumber" className="block text-sm font-medium text-gray-700">
+          Hausnummer
         </label>
         <input
-          type="tel"
-          id="phone"
-          {...register('phone')}
+          type="text"
+          id="houseNumber"
+          {...register('houseNumber', { required: 'Hausnummer ist erforderlich' })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
+        {errors.houseNumber && (
+          <p className="mt-1 text-sm text-red-600">{errors.houseNumber.message}</p>
+        )}
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
+        <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">
+          PLZ
         </label>
         <input
-          type="email"
-          id="email"
-          {...register('email', {
-            pattern: {
-              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: 'Invalid email address',
-            },
-          })}
+          type="text"
+          id="zipCode"
+          {...register('zipCode', { required: 'PLZ ist erforderlich' })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
-        {errors.email && (
-          <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+        {errors.zipCode && (
+          <p className="mt-1 text-sm text-red-600">{errors.zipCode.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+          Stadt
+        </label>
+        <input
+          type="text"
+          id="city"
+          {...register('city', { required: 'Stadt ist erforderlich' })}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+        {errors.city && (
+          <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+          Bundesland
+        </label>
+        <select
+          id="state"
+          {...register('state', { required: 'Bundesland ist erforderlich' })}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        >
+          <option value="">Bitte wählen...</option>
+          {germanStates.map(state => (
+            <option key={state} value={state}>
+              {state}
+            </option>
+          ))}
+        </select>
+        {errors.state && (
+          <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>
         )}
       </div>
 
@@ -115,14 +170,14 @@ export default function StoreForm({ store, onClose }: StoreFormProps) {
           onClick={onClose}
           className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
-          Cancel
+          Abbrechen
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
           className="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : store ? 'Update Store' : 'Add Store'}
+          {isSubmitting ? 'Speichert...' : store ? 'Filiale aktualisieren' : 'Filiale hinzufügen'}
         </button>
       </div>
     </form>

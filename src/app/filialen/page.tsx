@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaTrash, FaEdit } from 'react-icons/fa';
-import { Store } from '@/types/store';
+import { Store, GermanState, germanStates } from '@/types/store';
 import { dbService } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStore } from '@/contexts/StoreContext';
@@ -11,7 +11,14 @@ import { toast } from 'react-hot-toast';
 export default function StoresPage() {
   const { user } = useAuth();
   const { stores, addStore, updateStore, deleteStore } = useStore();
-  const [newStore, setNewStore] = useState<string>('');
+  const [newStore, setNewStore] = useState<Partial<Store>>({
+    name: '',
+    street: '',
+    houseNumber: '',
+    zipCode: '',
+    city: '',
+    state: germanStates[0]
+  });
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,23 +30,30 @@ export default function StoresPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStore.trim() || !user) return;
+    if (!newStore.name?.trim() || !user) return;
 
     try {
       setIsLoading(true);
       if (editingStore) {
         await updateStore(editingStore.id, { 
-          name: newStore.trim(),
+          name: newStore.name.trim(),
+          street: newStore.street || '',
+          houseNumber: newStore.houseNumber || '',
+          zipCode: newStore.zipCode || '',
+          city: newStore.city || '',
+          state: newStore.state || germanStates[0],
           updatedAt: new Date().toISOString()
         });
         toast.success('Filiale wurde aktualisiert');
         setEditingStore(null);
       } else {
         const store: Omit<Store, 'id'> = {
-          name: newStore.trim(),
-          address: '',
-          phone: '',
-          email: '',
+          name: newStore.name.trim(),
+          street: newStore.street || '',
+          houseNumber: newStore.houseNumber || '',
+          zipCode: newStore.zipCode || '',
+          city: newStore.city || '',
+          state: newStore.state || germanStates[0],
           organizationId: user.uid,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -48,7 +62,14 @@ export default function StoresPage() {
         toast.success('Filiale wurde erstellt');
       }
 
-      setNewStore('');
+      setNewStore({
+        name: '',
+        street: '',
+        houseNumber: '',
+        zipCode: '',
+        city: '',
+        state: germanStates[0]
+      });
     } catch (error) {
       console.error('Error saving store:', error);
       toast.error('Fehler beim Speichern der Filiale');
@@ -59,7 +80,7 @@ export default function StoresPage() {
 
   const handleEdit = (store: Store) => {
     setEditingStore(store);
-    setNewStore(store.name);
+    setNewStore(store);
   };
 
   const handleDelete = async (storeId: string) => {
@@ -107,22 +128,121 @@ export default function StoresPage() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6 sm:mb-8">
           <h2 className="text-2xl font-semibold text-slate-800 mb-6">Filiale hinzufügen</h2>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="storeName" className="block text-base font-medium text-slate-700 mb-2">
-                Filialname
-              </label>
-              <input
-                type="text"
-                id="storeName"
-                value={newStore}
-                onChange={(e) => setNewStore(e.target.value)}
-                placeholder="Name der Filiale"
-                className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
-                  focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
-                  transition-colors duration-200"
-                disabled={isLoading}
-              />
+          <form onSubmit={handleSubmit} className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 className="text-xl font-semibold mb-6">Filiale hinzufügen</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Linke Spalte */}
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="storeName" className="block text-base font-medium text-slate-700 mb-2">
+                    Filialname
+                  </label>
+                  <input
+                    type="text"
+                    id="storeName"
+                    value={newStore.name}
+                    onChange={(e) => setNewStore({ ...newStore, name: e.target.value })}
+                    placeholder="Name der Filiale"
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="storeStreet" className="block text-base font-medium text-slate-700 mb-2">
+                    Straße
+                  </label>
+                  <input
+                    type="text"
+                    id="storeStreet"
+                    value={newStore.street}
+                    onChange={(e) => setNewStore({ ...newStore, street: e.target.value })}
+                    placeholder="Straße"
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="storeHouseNumber" className="block text-base font-medium text-slate-700 mb-2">
+                    Hausnummer
+                  </label>
+                  <input
+                    type="text"
+                    id="storeHouseNumber"
+                    value={newStore.houseNumber}
+                    onChange={(e) => setNewStore({ ...newStore, houseNumber: e.target.value })}
+                    placeholder="Hausnummer"
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Rechte Spalte */}
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="storeZipCode" className="block text-base font-medium text-slate-700 mb-2">
+                    PLZ
+                  </label>
+                  <input
+                    type="text"
+                    id="storeZipCode"
+                    value={newStore.zipCode}
+                    onChange={(e) => setNewStore({ ...newStore, zipCode: e.target.value })}
+                    placeholder="PLZ"
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="storeCity" className="block text-base font-medium text-slate-700 mb-2">
+                    Stadt
+                  </label>
+                  <input
+                    type="text"
+                    id="storeCity"
+                    value={newStore.city}
+                    onChange={(e) => setNewStore({ ...newStore, city: e.target.value })}
+                    placeholder="Stadt"
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="storeState" className="block text-base font-medium text-slate-700 mb-2">
+                    Bundesland
+                  </label>
+                  <select
+                    id="storeState"
+                    value={newStore.state}
+                    onChange={(e) => setNewStore({ ...newStore, state: e.target.value as GermanState })}
+                    className="block w-full px-4 py-3 text-base rounded-lg border-slate-200 bg-slate-50 shadow-sm
+                      focus:border-emerald-500 focus:ring-emerald-500 hover:border-emerald-300
+                      transition-colors duration-200"
+                    required
+                  >
+                    {germanStates.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
@@ -131,7 +251,14 @@ export default function StoresPage() {
                   type="button"
                   onClick={() => {
                     setEditingStore(null);
-                    setNewStore('');
+                    setNewStore({
+                      name: '',
+                      street: '',
+                      houseNumber: '',
+                      zipCode: '',
+                      city: '',
+                      state: germanStates[0]
+                    });
                   }}
                   className="px-6 py-2.5 text-base font-medium rounded-lg border border-slate-300 
                     text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 
@@ -162,6 +289,9 @@ export default function StoresPage() {
                   <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Filiale
                   </th>
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Bundesland
+                  </th>
                   <th scope="col" className="relative px-4 sm:px-6 py-3">
                     <span className="sr-only">Aktionen</span>
                   </th>
@@ -181,8 +311,12 @@ export default function StoresPage() {
                         </div>
                         <div className="ml-3 sm:ml-4">
                           <div className="text-sm font-medium text-slate-900">{store.name}</div>
+                          <div className="text-xs text-slate-600">{store.street} {store.houseNumber}, {store.zipCode} {store.city}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-900">{store.state}</div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-1 sm:space-x-2">
@@ -191,18 +325,14 @@ export default function StoresPage() {
                           className="p-1.5 sm:p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors duration-200"
                           title="Bearbeiten"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
+                          <FaEdit />
                         </button>
                         <button
                           onClick={() => handleDelete(store.id)}
                           className="p-1.5 sm:p-2 text-rose-700 hover:bg-rose-50 rounded-lg transition-colors duration-200"
                           title="Löschen"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
+                          <FaTrash />
                         </button>
                       </div>
                     </td>
