@@ -1,56 +1,45 @@
 'use client';
 
-import { Metadata } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Mitarbeiter',
-};
-
-const navigation = [
-  { name: 'Übersicht', href: '/mitarbeiter' },
-  { name: 'Sortieren', href: '/mitarbeiter/sortieren' },
+const links = [
+  { href: '/mitarbeiter', label: 'Übersicht' },
+  { href: '/mitarbeiter/sortieren', label: 'Sortieren' },
 ];
-
-function Navigation() {
-  const pathname = usePathname();
-  
-  return (
-    <nav className="-mb-px flex space-x-8 px-4" aria-label="Tabs">
-      {navigation.map((item) => {
-        const isActive = pathname === item.href;
-        return (
-          <Link
-            key={item.name}
-            href={item.href}
-            className={`
-              whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium
-              ${isActive
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }
-            `}
-          >
-            {item.name}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
 
 export default function MitarbeiterLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
-    <div>
-      <div className="border-b border-gray-200">
-        <Navigation />
+    <div className="min-h-screen bg-transparent">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4">
+          <nav className="flex space-x-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            {links.map(({ href, label }) => {
+              const isActive = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    isActive
+                      ? 'bg-emerald-500 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+          {children}
+        </div>
       </div>
-      {children}
     </div>
   );
 }
