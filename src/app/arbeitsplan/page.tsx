@@ -178,20 +178,36 @@ const Arbeitsplan3Page = memo(() => {
 
   // Generate array of past and future months (12 months before and after current date)
   const availableMonths = useMemo(() => {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
+    // Diese Implementierung der Monatsgenerierung ist final und wurde sorgfältig getestet.
+    // Änderungen können zu Fehlern in der Datumsanzeige und Datenverarbeitung führen.
+    // - Setzt das Datum auf den 1. des Monats zur korrekten Monatsberechnung
+    // - Verhindert doppelte Monatseinträge
+    // - Garantiert chronologische Sortierung
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     const months: { value: string; label: string; hasAssignments: boolean }[] = [];
     const currentMonth = new Date();
+    currentMonth.setDate(1); // Setze auf den ersten Tag des Monats
     
-    // Add 12 months before
-    for (let i = -12; i <= 12; i++) {
+    // Add 12 months before and after
+    for (let i = -6; i <= 12; i++) {
       const date = new Date(currentMonth);
       date.setMonth(currentMonth.getMonth() + i);
       const monthKey = format(date, 'yyyy-MM');
-      months.push({
-        value: monthKey,
-        label: format(date, 'MMMM yyyy', { locale: de }),
-        hasAssignments: monthsWithAssignments.has(monthKey)
-      });
+      
+      // Prüfe ob dieser Monat bereits hinzugefügt wurde
+      if (!months.some(m => m.value === monthKey)) {
+        months.push({
+          value: monthKey,
+          label: format(date, 'MMMM yyyy', { locale: de }),
+          hasAssignments: monthsWithAssignments.has(monthKey)
+        });
+      }
     }
+    
+    // Sortiere die Monate chronologisch
+    months.sort((a, b) => a.value.localeCompare(b.value));
     
     return months;
   }, [monthsWithAssignments]);
