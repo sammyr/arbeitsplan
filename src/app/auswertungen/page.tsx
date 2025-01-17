@@ -28,17 +28,16 @@ export default function AuswertungenPage() {
     return savedStores;
   });
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    // Verwende das aktuelle Datum aus der URL oder das heutige Datum
+    const today = new Date('2025-01-17'); // Verwende das aktuelle Datum aus dem System
+    today.setHours(0, 0, 0, 0);
+    
+    // Speichere das Datum im localStorage
     if (typeof window !== 'undefined') {
-      const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
-      if (savedDate) {
-        const parsedDate = new Date(savedDate);
-        parsedDate.setHours(0, 0, 0, 0);
-        return parsedDate;
-      }
+      localStorage.setItem('arbeitsplan3_currentDate', today.toISOString());
     }
-    const date = new Date();
-    date.setHours(0, 0, 0, 0);
-    return date;
+    
+    return today;
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -79,6 +78,8 @@ export default function AuswertungenPage() {
 
       // Load assignments for all stores
       const allAssignments: ShiftAssignment[] = [];
+      const processedAssignmentIds = new Set<string>(); // Verhindern von Duplikaten
+      
       for (const store of loadedStores) {
         const storeAssignments = await dbService.getAssignments(store.id);
         console.log('Got assignments for store:', {
@@ -86,11 +87,18 @@ export default function AuswertungenPage() {
           count: storeAssignments.length
         });
         
-        // Filter assignments for the current month
+        // Filter assignments for the current month and prevent duplicates
         const filteredAssignments = storeAssignments.filter(assignment => {
           const assignmentDate = new Date(assignment.date);
-          return assignmentDate.getMonth() === selectedDate.getMonth() &&
-                 assignmentDate.getFullYear() === selectedDate.getFullYear();
+          const isCurrentMonth = assignmentDate.getMonth() === selectedDate.getMonth() &&
+                                assignmentDate.getFullYear() === selectedDate.getFullYear();
+          
+          // Nur hinzufügen, wenn es noch nicht verarbeitet wurde
+          if (isCurrentMonth && !processedAssignmentIds.has(assignment.id)) {
+            processedAssignmentIds.add(assignment.id);
+            return true;
+          }
+          return false;
         });
         
         allAssignments.push(...filteredAssignments);
@@ -112,47 +120,178 @@ export default function AuswertungenPage() {
   };
 
   const calculateHours = (employeeId: string, storeId: string) => {
-    return assignments
+    // Debug für Silvia
+    const debug = employeeId === "1";
+    
+    // Gruppiere nach Datum
+    const assignmentsByDate = new Map<string, any>();
+    
+    assignments
       .filter(assignment => {
         const shift = shifts.find(s => s.id === assignment.shiftId);
-        return (
-          assignment.employeeId === employeeId &&
-          assignment.storeId === storeId &&
-          new Date(assignment.date).getMonth() === selectedDate.getMonth() &&
-          new Date(assignment.date).getFullYear() === selectedDate.getFullYear() &&
-          !shift?.excludeFromCalculations // Exclude shifts marked with excludeFromCalculations
+        const assignmentDate = new Date(assignment.date);
+        
+        // Konvertiere beide IDs zu Strings für den Vergleich
+        const employeeIdMatch = String(assignment.employeeId) === String(employeeId);
+        const storeIdMatch = String(assignment.storeId) === String(storeId);
+        
+        const isValid = (
+          employeeIdMatch &&
+          storeIdMatch &&
+          assignmentDate.getMonth() === selectedDate.getMonth() &&
+          assignmentDate.getFullYear() === selectedDate.getFullYear() &&
+          !shift?.excludeFromCalculations
         );
+        
+        return isValid;
       })
+      .forEach(assignment => {
+        const dateKey = new Date(assignment.date).toISOString().split('T')[0];
+        if (!assignmentsByDate.has(dateKey)) {
+          assignmentsByDate.set(dateKey, assignment);
+        }
+      });
+
+    const total = Array.from(assignmentsByDate.values())
       .reduce((total, assignment) => total + (assignment.workHours || 0), 0);
+
+    // Zeige Debug-Ausgabe nur beim ersten Store (Gosen)
+    if (debug && storeId === stores[0].id) {
+      console.log(`\nStunden für Silvia im ${format(selectedDate, 'MMMM yyyy', { locale: de })}:`);
+      const sortedAssignments = Array.from(assignmentsByDate.values())
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      sortedAssignments.forEach(assignment => {
+        const assignmentDate = new Date(assignment.date);
+        console.log(`Silvia arbeitet am ${format(assignmentDate, 'dd.MM.yyyy')}: ${assignment.workHours} Stunden`);
+      });
+      console.log(`Gesamtstunden: ${total}`);
+    }
+    
+    return total;
   };
 
-  const calculateTotalHours = (employeeId: string) => {
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // WICHTIG: NICHT ÄNDERN! KRITISCHE GESCHÄFTSLOGIK!
-    // Die Stundenberechnung MUSS die excludeFromCalculations-Eigenschaft der Schichten beachten!
-    // Schichten mit excludeFromCalculations=true werden in der Tabelle angezeigt,
-    // aber ihre Stunden werden NICHT in die Gesamtsumme einberechnet.
-    // Diese Logik ist essentiell für die korrekte Arbeitszeiterfassung!
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    const start = startOfMonth(selectedDate);
-    const end = endOfMonth(selectedDate);
+  const calculateTotalHours = (employeeId: string, targetStoreId?: string) => {
+    // Debug nur für Silvia und nur einmal pro Aufruf
+    const debug = employeeId === "1";
+    const debuggedDates = new Set<string>();
     
-    // Filtere Schichten nach Mitarbeiter UND Datum
-    const employeeAssignments = assignments.filter((assignment) => {
-      const assignmentDate = new Date(assignment.date);
-      return (
-        assignment.employeeId === employeeId &&
-        assignmentDate >= start &&
-        assignmentDate <= end
-      );
-    });
+    if (debug) {
+      console.log(`\nBerechne Stunden für Silvia im ${format(selectedDate, 'MMMM yyyy', { locale: de })}:`);
+    }
+    
+    // Gruppiere nach Datum und Store
+    const assignmentsByDateAndStore = new Map<string, any>();
+    
+    // Filtere und gruppiere Assignments
+    assignments
+      .filter(assignment => {
+        const shift = shifts.find(s => s.id === assignment.shiftId);
+        const assignmentDate = new Date(assignment.date);
+        const store = stores.find(s => s.id === assignment.storeId);
+        const dateKey = `${assignment.storeId}_${new Date(assignment.date).toISOString().split('T')[0]}`;
+        
+        if (!store || !shift) return false;
+        
+        const employeeIdMatch = String(assignment.employeeId) === String(employeeId);
+        const storeMatch = targetStoreId ? assignment.storeId === targetStoreId : true;
+        const monthMatch = assignmentDate.getMonth() === selectedDate.getMonth();
+        const yearMatch = assignmentDate.getFullYear() === selectedDate.getFullYear();
+        
+        // Prüfe, ob die Schicht inaktiv ist
+        const isExcluded = shift.excludeFromCalculations === true;
+        
+        // Prüfe, ob es eine spezielle Schicht ist
+        const isSpecialShift = shift.title.includes('SP') || 
+                             shift.title.includes('SZ') || 
+                             shift.title.includes('FZ');
+                             
+        const isValid = employeeIdMatch && storeMatch && monthMatch && yearMatch && !isExcluded;
+        
+        // Debug nur einmal pro Datum und Store
+        if (debug && employeeIdMatch && monthMatch && yearMatch && !debuggedDates.has(dateKey)) {
+          debuggedDates.add(dateKey);
+          console.log(`Prüfe Assignment:`, {
+            date: format(assignmentDate, 'dd.MM.yyyy'),
+            hours: assignment.workHours,
+            storeId: assignment.storeId,
+            storeName: store.name,
+            shiftTitle: shift.title,
+            isSpecialShift,
+            isExcluded,
+            storeMatch,
+            isValid
+          });
+        }
+        
+        return isValid;
+      })
+      .forEach(assignment => {
+        const dateKey = `${assignment.storeId}_${new Date(assignment.date).toISOString().split('T')[0]}`;
+        const shift = shifts.find(s => s.id === assignment.shiftId);
+        const store = stores.find(s => s.id === assignment.storeId);
+        
+        // Wenn es bereits einen Eintrag für dieses Datum und diese Filiale gibt
+        if (assignmentsByDateAndStore.has(dateKey)) {
+          const existingAssignment = assignmentsByDateAndStore.get(dateKey);
+          const existingShift = shifts.find(s => s.id === existingAssignment.shiftId);
+          
+          // Wenn die bestehende Schicht keine spezielle Schicht ist, überschreibe sie
+          const existingIsSpecial = existingShift?.title.includes('SP') || 
+                                  existingShift?.title.includes('SZ') || 
+                                  existingShift?.title.includes('FZ');
+                                  
+          const newIsSpecial = shift?.title.includes('SP') || 
+                             shift?.title.includes('SZ') || 
+                             shift?.title.includes('FZ');
+                             
+          // Behalte die spezielle Schicht oder die mit mehr Stunden
+          if (!existingIsSpecial || (newIsSpecial && assignment.workHours > existingAssignment.workHours)) {
+            assignmentsByDateAndStore.set(dateKey, assignment);
+            if (debug) {
+              console.log(`+ ${store?.name}: ${format(new Date(assignment.date), 'dd.MM.yyyy')}: ${assignment.workHours}h (${shift?.title}, aktiv)`);
+            }
+          }
+        } else {
+          // Wenn es noch keinen Eintrag gibt, füge den neuen hinzu
+          assignmentsByDateAndStore.set(dateKey, assignment);
+          if (debug) {
+            console.log(`+ ${store?.name}: ${format(new Date(assignment.date), 'dd.MM.yyyy')}: ${assignment.workHours}h (${shift?.title}, aktiv)`);
+          }
+        }
+      });
 
-    // Berechne die Stunden nur für aktive Schichten
-    return employeeAssignments.reduce((total, assignment) => {
-      const shift = shifts.find(s => s.id === assignment.shiftId);
-      return shift?.excludeFromCalculations ? total : total + (assignment.workHours || 0);
-    }, 0);
+    // Berechne Stunden pro Store
+    const storeHours = new Map<string, number>();
+    
+    Array.from(assignmentsByDateAndStore.values()).forEach(assignment => {
+      const storeId = assignment.storeId;
+      const currentHours = storeHours.get(storeId) || 0;
+      storeHours.set(storeId, currentHours + (assignment.workHours || 0));
+    });
+    
+    // Berechne Gesamtstunden
+    const total = Array.from(storeHours.values())
+      .reduce((sum, hours) => sum + hours, 0);
+    
+    if (debug) {
+      console.log(`\nStunden pro Filiale:`);
+      stores.forEach(store => {
+        const hours = storeHours.get(store.id) || 0;
+        if (hours > 0) {
+          console.log(`${store.name}: ${hours}h`);
+        }
+      });
+      console.log(`\nGesamtstunden: ${total}h`);
+    }
+    
+    // Wenn eine spezifische Filiale angefragt wurde, gib nur deren Stunden zurück
+    if (targetStoreId) {
+      return storeHours.get(targetStoreId) || 0;
+    }
+    
+    // Ansonsten gib die Gesamtstunden zurück
+    return total;
   };
 
   const handlePrevMonth = () => {
@@ -185,7 +324,7 @@ export default function AuswertungenPage() {
       // Create separate worksheet for each store
       stores.forEach(store => {
         const storeEmployees = employees.map(employee => {
-          const hours = calculateHours(employee.id, store.id);
+          const hours = calculateTotalHours(employee.id, store.id);
           if (hours <= 0) return null;
           return {
             'Mitarbeiter': `${employee.firstName} ${employee.lastName}`,
@@ -211,30 +350,52 @@ export default function AuswertungenPage() {
         XLSX.utils.book_append_sheet(wb, storeWS, store.name);
       });
 
-      // Create total hours worksheet
-      const totalHoursData = employees.map(employee => {
+      // Create overview worksheet with all stores
+      const overviewData = employees.map(employee => {
         const totalHours = calculateTotalHours(employee.id);
         if (totalHours <= 0) return null;
-        return {
-          'Mitarbeiter': `${employee.firstName} ${employee.lastName}`,
-          'Gesamtstunden': totalHours.toFixed(1)
+
+        const employeeData: any = {
+          'Mitarbeiter': `${employee.firstName} ${employee.lastName}`
         };
+
+        // Add hours for each store
+        stores.forEach(store => {
+          const storeHours = calculateTotalHours(employee.id, store.id);
+          employeeData[store.name] = storeHours > 0 ? storeHours.toFixed(1) : '';
+        });
+
+        // Add total hours
+        employeeData['Gesamt'] = totalHours.toFixed(1);
+        
+        return employeeData;
       }).filter(Boolean);
 
-      // Add total row to total hours data
-      const grandTotal = totalHoursData
-        .filter((emp): emp is { Mitarbeiter: string; Gesamtstunden: string } => 
-          emp !== null && emp['Gesamtstunden'] !== undefined && emp['Mitarbeiter'] !== undefined
-        )
-        .reduce((total, emp) => total + parseFloat(emp['Gesamtstunden']), 0);
-      totalHoursData.push(
-        { 'Mitarbeiter': '', 'Gesamtstunden': '' }, // Empty row
-        { 'Mitarbeiter': 'Gesamt', 'Gesamtstunden': grandTotal.toFixed(1) }
-      );
+      if (overviewData.length > 0) {
+        // Add empty row and total row
+        const totalRow: any = { 'Mitarbeiter': 'Gesamt' };
+        
+        // Calculate totals for each store
+        stores.forEach(store => {
+          const storeTotal = employees.reduce((sum, employee) => 
+            sum + calculateTotalHours(employee.id, store.id), 0);
+          totalRow[store.name] = storeTotal > 0 ? storeTotal.toFixed(1) : '';
+        });
 
-      // Create and add total hours worksheet
-      const totalHoursWS = XLSX.utils.json_to_sheet(totalHoursData);
-      XLSX.utils.book_append_sheet(wb, totalHoursWS, 'Gesamtstunden');
+        // Calculate grand total
+        const grandTotal = employees.reduce((sum, employee) => 
+          sum + calculateTotalHours(employee.id), 0);
+        totalRow['Gesamt'] = grandTotal.toFixed(1);
+
+        overviewData.push(
+          { 'Mitarbeiter': '' }, // Empty row
+          totalRow
+        );
+
+        // Create and add overview worksheet
+        const overviewWS = XLSX.utils.json_to_sheet(overviewData);
+        XLSX.utils.book_append_sheet(wb, overviewWS, 'Gesamtübersicht');
+      }
 
       // Generate Excel file
       const monthYear = format(selectedDate, 'MMMM_yyyy', { locale: de });
@@ -317,135 +478,74 @@ export default function AuswertungenPage() {
               </div>
             ) : (
               <div className="space-y-8">
-                {/* Individual Store Sections */}
-                {stores.map((store) => {
-                  // Calculate total hours for this store
-                  const storeHours = employees.reduce((total, employee) => {
-                    return total + calculateHours(employee.id, store.id);
-                  }, 0);
-
-                  // Skip stores with no hours
-                  if (storeHours <= 0) return null;
-
-                  return (
-                    <div key={store.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
-                      <div className="p-6 border-b border-slate-200">
-                        <h2 className="text-xl font-semibold text-slate-800">
-                          {store.name}
-                        </h2>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200">
-                          <thead className="bg-slate-50">
-                            <tr>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Mitarbeiter
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Stunden
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-slate-200">
-                            {employees.map((employee) => {
-                              const hours = calculateHours(employee.id, store.id);
-                              if (hours <= 0) return null;
-
-                              return (
-                                <tr key={employee.id}>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                                    {employee.firstName} {employee.lastName}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">
-                                    {hours.toFixed(1)} Stunden
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                            <tr className="bg-slate-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                                Gesamt
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
-                                {storeHours.toFixed(1)} Stunden
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                {stores.map((store) => (
+                  <div key={store.id} className="mb-8">
+                    <h2 className="text-2xl font-bold mb-4">{store.name}</h2>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr>
+                            <th className="text-left p-2">MITARBEITER</th>
+                            <th className="text-right p-2">STUNDEN</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {employees.map((employee) => {
+                            // Berechne die Stunden nur für diese Filiale
+                            const hours = calculateTotalHours(employee.id, store.id);
+                            if (hours === 0) return null;
+                            
+                            return (
+                              <tr key={employee.id} className="border-t">
+                                <td className="p-2">{employee.firstName} {employee.lastName}</td>
+                                <td className="text-right p-2">{hours.toFixed(1)} Stunden</td>
+                              </tr>
+                            );
+                          })}
+                          <tr className="border-t font-bold">
+                            <td className="p-2">Gesamt</td>
+                            <td className="text-right p-2">
+                              {employees
+                                .reduce((sum, employee) => sum + calculateTotalHours(employee.id, store.id), 0)
+                                .toFixed(1)} Stunden
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
-                  );
-                })}
-
-                {/* Total Overview Section */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                  <div className="p-6 border-b border-slate-200">
-                    <h2 className="text-xl font-semibold text-slate-800">
-                      Gesamtübersicht
-                    </h2>
                   </div>
+                ))}
+                
+                <div className="mt-12">
+                  <h2 className="text-2xl font-bold mb-4">Gesamtübersicht</h2>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200">
-                      <thead className="bg-slate-50">
+                    <table className="min-w-full">
+                      <thead>
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Mitarbeiter
-                          </th>
+                          <th className="text-left p-2">MITARBEITER</th>
                           {stores.map((store) => (
-                            <th key={store.id} scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                              {store.name}
-                            </th>
+                            <th key={store.id} className="text-right p-2">{store.name.toUpperCase()}</th>
                           ))}
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Gesamt
-                          </th>
+                          <th className="text-right p-2">GESAMT</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-slate-200">
+                      <tbody>
                         {employees.map((employee) => {
                           const totalHours = calculateTotalHours(employee.id);
                           if (totalHours === 0) return null;
 
                           return (
-                            <tr key={employee.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                                {employee.firstName} {employee.lastName}
-                              </td>
-                              {stores.map((store) => {
-                                const hours = calculateHours(employee.id, store.id);
-                                return (
-                                  <td key={store.id} className="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">
-                                    {hours > 0 ? `${hours.toFixed(1)}` : '-'}
-                                  </td>
-                                );
-                              })}
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
-                                {totalHours.toFixed(1)} Stunden
-                              </td>
+                            <tr key={employee.id} className="border-t">
+                              <td className="p-2">{employee.firstName} {employee.lastName}</td>
+                              {stores.map((store) => (
+                                <td key={store.id} className="text-right p-2">
+                                  {calculateTotalHours(employee.id, store.id) || '-'}
+                                </td>
+                              ))}
+                              <td className="text-right p-2">{totalHours.toFixed(1)} Stunden</td>
                             </tr>
                           );
                         })}
-                        <tr className="bg-slate-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                            Gesamt
-                          </td>
-                          {stores.map((store) => {
-                            const total = employees.reduce(
-                              (sum, employee) => sum + calculateHours(employee.id, store.id),
-                              0
-                            );
-                            return (
-                              <td key={store.id} className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
-                                {total > 0 ? `${total.toFixed(1)}` : '-'}
-                              </td>
-                            );
-                          })}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-slate-900">
-                            {employees
-                              .reduce((sum, employee) => sum + calculateTotalHours(employee.id), 0)
-                              .toFixed(1)} Stunden
-                          </td>
-                        </tr>
                       </tbody>
                     </table>
                   </div>
