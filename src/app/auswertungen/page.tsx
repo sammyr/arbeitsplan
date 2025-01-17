@@ -28,15 +28,15 @@ export default function AuswertungenPage() {
     return savedStores;
   });
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    // Verwende das aktuelle Datum aus der URL oder das heutige Datum
-    const today = new Date('2025-01-17'); // Verwende das aktuelle Datum aus dem System
-    today.setHours(0, 0, 0, 0);
-    
-    // Speichere das Datum im localStorage
     if (typeof window !== 'undefined') {
-      localStorage.setItem('arbeitsplan3_currentDate', today.toISOString());
+      const savedDate = localStorage.getItem('arbeitsplan3_currentDate');
+      if (savedDate) {
+        return new Date(savedDate);
+      }
     }
-    
+    const today = new Date('2025-01-17');
+    today.setHours(0, 0, 0, 0);
+    localStorage.setItem('arbeitsplan3_currentDate', today.toISOString());
     return today;
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +44,13 @@ export default function AuswertungenPage() {
   useEffect(() => {
     console.log('Loading data for date:', selectedDate);
     loadData();
+  }, [selectedDate]);
+
+  // Speichere das ausgewählte Datum im localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('arbeitsplan3_currentDate', selectedDate.toISOString());
+    }
   }, [selectedDate]);
 
   const loadData = async () => {
