@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from '@/styles/sidebar.module.css';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -51,62 +52,93 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   });
 
   return (
-    <div className="relative">
-      <div className="flex min-h-screen">
-        {shouldShowSidebar && (
-          <>
-            {/* Mobile menu button */}
+    <div className="min-h-screen">
+      {shouldShowSidebar && (
+        <>
+          {/* Desktop sidebar */}
+          <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+            <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
+              <div className="flex h-16 shrink-0 items-center">
+                <img
+                  className="h-8 w-auto"
+                  src="/logo.svg"
+                  alt="Dienstplan Manager"
+                />
+              </div>
+              <Sidebar onMobileMenuClose={() => setIsMobileMenuOpen(false)} />
+            </div>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:hidden">
             <button
               type="button"
-              className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
+              onClick={() => setIsMobileMenuOpen(true)}
             >
               <span className="sr-only">Open sidebar</span>
-              <Bars3Icon className="h-6 w-6 text-slate-600" aria-hidden="true" />
+              <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
+            <div className="flex flex-1 justify-between">
+              <div className="flex items-center">
+                <img
+                  className="h-8 w-auto"
+                  src="/logo.svg"
+                  alt="Dienstplan Manager"
+                />
+              </div>
+            </div>
+          </div>
 
-            {/* Dark background on mobile */}
-            <div
-              className={`
-                fixed inset-0 bg-black/30 lg:hidden
-                ${isMobileMenuOpen ? 'opacity-100 z-40' : 'opacity-0 pointer-events-none'}
-                transition-opacity duration-300
-              `}
+          {/* Mobile menu */}
+          <div
+            className={`relative lg:hidden ${
+              isMobileMenuOpen ? "" : "hidden"
+            }`}
+          >
+            {/* Background overlay */}
+            <div 
+              className="fixed inset-0 bg-gray-900/80 z-40" 
               onClick={() => setIsMobileMenuOpen(false)}
             />
 
-            {/* Sidebar */}
-            <div
-              className={`
-                fixed top-0 left-0 bottom-0 z-50
-                w-[280px] bg-white shadow-xl
-                transform transition-transform duration-300 ease-in-out
-                lg:translate-x-0 lg:static lg:shadow-none
-                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-              `}
-            >
-              <nav className="h-full">
-                <div className="h-full overflow-y-auto">
-                  <div className="px-4 py-5">
-                    <Sidebar onMobileMenuClose={() => setIsMobileMenuOpen(false)} />
-                  </div>
+            <div className="fixed inset-0 flex z-50">
+              {/* Sidebar mobile container */}
+              <div className="relative flex w-full max-w-xs flex-1">
+                <div className="absolute right-0 top-0 flex w-16 justify-center pt-5">
+                  <button
+                    type="button"
+                    className="-m-2.5 p-2.5"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <span className="sr-only">Close sidebar</span>
+                    <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                  </button>
                 </div>
-              </nav>
-            </div>
-          </>
-        )}
 
-        {/* Main content */}
-        <main className={`flex-1 ${isPublicRoute ? 'w-full' : 'bg-slate-50'}`}>
-          {isPublicRoute ? (
-            children
-          ) : (
-            <div className={`mx-auto max-w-7xl ${shouldShowSidebar ? 'lg:pl-[280px]' : ''}`}>
-              {children}
+                {/* Sidebar component mobile */}
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
+                  <div className="flex h-16 shrink-0 items-center">
+                    <img
+                      className="h-8 w-auto"
+                      src="/logo.svg"
+                      alt="Dienstplan Manager"
+                    />
+                  </div>
+                  <Sidebar onMobileMenuClose={() => setIsMobileMenuOpen(false)} />
+                </div>
+              </div>
             </div>
-          )}
-        </main>
-      </div>
+          </div>
+        </>
+      )}
+
+      {/* Main content */}
+      <main className={`${shouldShowSidebar ? 'lg:pl-72' : ''}`}>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

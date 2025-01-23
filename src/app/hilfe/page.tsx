@@ -18,7 +18,7 @@ export default function HelpPage() {
             className="rounded-lg"
           />
         </div>
-        <h1 className="text-3xl font-bold mb-2">Arbeitsplan Manager</h1>
+        <h1 className="text-3xl font-bold mb-2">Dienstplan Manager</h1>
         <span className="text-sm text-gray-500 mb-6">Version 0.53 (Beta)</span>
       </div>
 
@@ -35,10 +35,9 @@ export default function HelpPage() {
               <li>Erstellung von Arbeitsschichten durch Spracheingabe</li>
               <li>Erweiterte Benachrichtigungen:
                 <ul className="list-circle pl-5 mt-2 space-y-2">
-                  <li>Schichtwechsel Informationen</li>
-                  <li>E-Mail Vorlagen</li>
-                  <li>E-Mail & Online Bestätigungen für Schichtübernahmen</li>
-                  <li>SMS & WhatsApp Benachrichtigungen</li>
+                  <li>mit Mitarbeitern abgestimmter Schichtwechsel</li>
+                  <li>Dienstplan für alle Mitarbeiter inkl. E-Mail, SMS & WhatsApp Verkehr</li>
+                 
                 </ul>
               </li>
             </ul>
@@ -54,8 +53,9 @@ export default function HelpPage() {
           </h2>
           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-l-4 border-emerald-400 p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
             <ul className="list-disc pl-5 text-slate-700 space-y-3">
-              <li>Registrierung / Login</li>
-              <li>Arbeitsplan an alle Mitarbeiter senden</li>
+              <li>Schichtüberschneidungen automatisch erkennen</li>
+              <li>Urlaubsplanung</li>   
+              
             </ul>
           </div>
         </section>
@@ -68,6 +68,21 @@ export default function HelpPage() {
             Changelog
           </h2>
           <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
+              <h3 className="text-lg font-medium text-slate-800">Version 0.54 (Januar 2024)</h3>
+              <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">
+                <li>Urlaubsübersicht überarbeitet:</li>
+                <li className="ml-4">- Neue Jahresauswahl im Header mit Monatsanzeige</li>
+                <li className="ml-4">- Verbesserte Darstellung der Urlaubstage mit Zeiträumen</li>
+                <li className="ml-4">- Excel-Export pro Jahr mit allen Details</li>
+                <li>Layout-Verbesserungen:</li>
+                <li className="ml-4">- Fixierte Seitenleiste für bessere Navigation</li>
+                <li className="ml-4">- Verbessertes mobiles Menü</li>
+                <li className="ml-4">- Konsistentes Design über alle Seiten</li>
+                <li>App wurde in "Dienstplan Manager" umbenannt</li>
+              </ul>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-slate-200">
               <h3 className="text-lg font-medium text-slate-800">Version 0.53 (Dezember 2024)</h3>
               <ul className="list-disc pl-5 mt-3 text-slate-600 space-y-2">

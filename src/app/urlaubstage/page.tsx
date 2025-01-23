@@ -1,0 +1,448 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { format, parseISO, getYear, getMonth } from 'date-fns';
+import { de } from 'date-fns/locale';
+import { dbService } from '@/lib/db';
+import * as XLSX from 'xlsx';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import AuthGuard from '@/components/AuthGuard';
+
+interface Employee {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface Store {
+  id: string;
+  name: string;
+}
+
+interface WorkingShift {
+  id: string;
+  title: string;
+}
+
+interface Assignment {
+  id: string;
+  employeeId: string;
+  date: string;
+  shiftId: string;
+  storeId: string;
+}
+
+interface HolidayEntry {
+  employeeId: string;
+  employeeName: string;
+  storeId: string;
+  storeName: string;
+  date: string;
+}
+
+interface GroupedHolidays {
+  [year: string]: {
+    [month: string]: HolidayEntry[];
+  };
+}
+
+type SortField = 'employeeName' | 'urlaubstage' | 'storeName';
+type SortDirection = 'asc' | 'desc';
+
+export default function HolidaysPage() {
+  const [holidays, setHolidays] = useState<GroupedHolidays>({});
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('storeName');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchHolidays = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        
+        const [employees, shifts, stores] = await Promise.all([
+          dbService.getEmployeesByOrganization(user.uid),
+          dbService.getWorkingShiftsByOrganization(user.uid),
+          dbService.getStores(user.uid)
+        ]);
+
+        console.log('Debug - Geladene Daten:', {
+          employeesCount: employees?.length ?? 0,
+          shiftsCount: shifts?.length ?? 0,
+          storesCount: stores?.length ?? 0
+        });
+
+        if (!Array.isArray(employees) || !Array.isArray(shifts) || !Array.isArray(stores)) {
+          throw new Error('Fehlerhafte Datenstruktur: Eine oder mehrere Datenquellen sind keine Arrays');
+        }
+
+        const holidayShifts = shifts.filter(shift => shift?.title === 'U');
+        const holidayShiftIds = new Set(holidayShifts.map(shift => shift.id));
+        const groupedHolidays: GroupedHolidays = {};
+        const years = new Set<string>();
+
+        // Lade Zuweisungen für alle Filialen
+        await Promise.all(stores.map(async (store) => {
+          try {
+            if (!store?.id) return;
+
+            const assignments = await dbService.getAssignments(store.id);
+            if (!Array.isArray(assignments)) return;
+
+            const holidayAssignments = assignments.filter(assignment => 
+              assignment?.shiftId && holidayShiftIds.has(assignment.shiftId)
+            );
+
+            holidayAssignments.forEach(assignment => {
+              if (!assignment?.date || !assignment?.employeeId) return;
+
+              const employee = employees.find(emp => emp?.id === assignment.employeeId);
+              if (!employee) return;
+
+              const employeeName = [employee.firstName, employee.lastName]
+                .filter(Boolean)
+                .join(' ').trim();
+
+              if (!employeeName) return;
+
+              const date = parseISO(assignment.date);
+              const year = getYear(date).toString();
+              const month = getMonth(date).toString();
+              years.add(year);
+
+              if (!groupedHolidays[year]) {
+                groupedHolidays[year] = {};
+              }
+              
+              if (!groupedHolidays[year][month]) {
+                groupedHolidays[year][month] = [];
+              }
+
+              groupedHolidays[year][month].push({
+                employeeId: assignment.employeeId,
+                employeeName,
+                storeId: store.id,
+                storeName: store.name,
+                date: assignment.date
+              });
+            });
+          } catch (storeError) {
+            console.error(`Fehler beim Laden der Daten für Filiale:`, storeError);
+          }
+        }));
+
+        setHolidays(groupedHolidays);
+        const sortedYears = Array.from(years).sort((a, b) => b.localeCompare(a));
+        setAvailableYears(sortedYears);
+        setSelectedYear(sortedYears[0] ? parseInt(sortedYears[0]) : new Date().getFullYear());
+        setLoading(false);
+      } catch (err) {
+        console.error('Fehler beim Laden der Urlaubstage:', err);
+        setError('Ein Fehler ist beim Laden der Urlaubstage aufgetreten. Bitte versuchen Sie es später erneut.');
+        setLoading(false);
+      }
+    };
+
+    fetchHolidays();
+  }, [user]);
+
+  const formatDate = (dateString: string) => {
+    return format(parseISO(dateString), 'dd. MMMM yyyy', { locale: de });
+  };
+
+  const getMonthName = (monthIndex: number) => {
+    return format(new Date(2024, monthIndex), 'MMMM', { locale: de });
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' 
+      ? <ChevronUpIcon className="h-4 w-4" />
+      : <ChevronDownIcon className="h-4 w-4" />;
+  };
+
+  const handleExportToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    const data = Object.entries(holidays[selectedYear])
+      .sort((a, b) => Number(a[0]) - Number(b[0]))
+      .flatMap(([month, entries]) => {
+        const groupedEmployees = groupHolidaysByEmployee(entries);
+        return Object.values(groupedEmployees).map(employee => ({
+          'Monat': getMonthName(parseInt(month)),
+          'Mitarbeiter': employee.employeeName,
+          'Urlaubstage': `${employee.totalDays} ${employee.totalDays === 1 ? 'Tag' : 'Tage'} (${employee.ranges.map(range => formatDateRange(range.start, range.end)).join(', ')})`,
+          'Filiale': employee.storeName
+        }));
+      });
+
+    if (data.length > 0) {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(workbook, worksheet, `Urlaubstage ${selectedYear}`);
+    }
+
+    XLSX.writeFile(workbook, `Urlaubstage_${selectedYear}.xlsx`);
+  };
+
+  const groupHolidaysByEmployee = (entries: HolidayEntry[]) => {
+    const grouped = new Map<string, {
+      employeeName: string;
+      storeName: string;
+      dates: Date[]
+    }>();
+
+    entries.forEach(entry => {
+      const key = `${entry.employeeId}-${entry.storeId}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          employeeName: entry.employeeName,
+          storeName: entry.storeName,
+          dates: []
+        });
+      }
+      grouped.get(key)?.dates.push(parseISO(entry.date));
+    });
+
+    return Array.from(grouped.values()).map(({ employeeName, storeName, dates }) => {
+      dates.sort((a, b) => a.getTime() - b.getTime());
+      
+      // Finde zusammenhängende Zeiträume
+      const ranges: { start: Date; end: Date; }[] = [];
+      let currentRange: { start: Date; end: Date; } | null = null;
+
+      dates.forEach(date => {
+        if (!currentRange) {
+          currentRange = { start: date, end: date };
+        } else {
+          const nextDay = new Date(currentRange.end);
+          nextDay.setDate(nextDay.getDate() + 1);
+          
+          if (date.getTime() === nextDay.getTime()) {
+            currentRange.end = date;
+          } else {
+            ranges.push(currentRange);
+            currentRange = { start: date, end: date };
+          }
+        }
+      });
+      
+      if (currentRange) {
+        ranges.push(currentRange);
+      }
+
+      return {
+        employeeName,
+        storeName,
+        ranges,
+        totalDays: dates.length
+      };
+    });
+  };
+
+  const formatDateRange = (start: Date, end: Date) => {
+    if (start.getTime() === end.getTime()) {
+      return format(start, 'd. MMMM', { locale: de });
+    }
+    if (start.getMonth() === end.getMonth()) {
+      return `${format(start, 'd.')} - ${format(end, 'd. MMMM', { locale: de })}`;
+    }
+    return `${format(start, 'd. MMMM')} - ${format(end, 'd. MMMM', { locale: de })}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] py-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mt-4">Laden...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] py-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mt-4 text-red-600">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AuthGuard>
+      <div className="flex min-h-screen">
+        <main className="flex-1">
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="p-4 md:p-6 max-w-[1920px] mx-auto">
+              {/* Header */}
+              <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6">
+                <div className="flex flex-col gap-4">
+                  <h1 className="text-2xl font-semibold text-slate-800">
+                    Urlaubstage {selectedYear}
+                  </h1>
+
+                  <div className="flex items-center justify-between">
+                    {/* Left side - Year Selection */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedYear(selectedYear - 1)}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors border border-green-500"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                        className="bg-white border border-green-500 rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 min-w-[200px]"
+                      >
+                        {Array.from({ length: 3 }, (_, i) => selectedYear - 1 + i).map(year => (
+                          <option 
+                            key={year} 
+                            value={year}
+                            className={holidays[year] && Object.keys(holidays[year]).length > 0 ? 'font-semibold text-green-600' : ''}
+                          >
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        onClick={() => setSelectedYear(selectedYear + 1)}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors border border-green-500"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Right side - Export Button */}
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={handleExportToExcel}
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-green-500 text-green-500 rounded-lg hover:bg-green-50 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Excel Export
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              {holidays[selectedYear] && (
+                <div className="space-y-6">
+                  {Object.entries(holidays[selectedYear])
+                    .sort((a, b) => Number(a[0]) - Number(b[0]))
+                    .map(([month, entries]) => {
+                      const groupedEmployees = groupHolidaysByEmployee(entries);
+                      
+                      return (
+                        <div key={month} className="bg-white rounded-lg shadow-sm">
+                          <div className="p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+                              {getMonthName(parseInt(month))}
+                            </h2>
+                            <table className="min-w-full">
+                              <thead>
+                                <tr>
+                                  <th 
+                                    scope="col"
+                                    className="w-1/3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                                    onClick={() => handleSort('employeeName')}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      Mitarbeiter
+                                      {getSortIcon('employeeName')}
+                                    </div>
+                                  </th>
+                                  <th 
+                                    scope="col"
+                                    className="w-1/3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                                    onClick={() => handleSort('urlaubstage')}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      Urlaubstage
+                                      {getSortIcon('urlaubstage')}
+                                    </div>
+                                  </th>
+                                  <th 
+                                    scope="col"
+                                    className="w-1/3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                                    onClick={() => handleSort('storeName')}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      Filiale
+                                      {getSortIcon('storeName')}
+                                    </div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {Object.values(groupedEmployees)
+                                  .sort((a, b) => {
+                                    let comparison = 0;
+                                    if (sortField === 'employeeName') {
+                                      comparison = a.employeeName.localeCompare(b.employeeName);
+                                    } else if (sortField === 'urlaubstage') {
+                                      comparison = a.totalDays - b.totalDays;
+                                    } else if (sortField === 'storeName') {
+                                      comparison = a.storeName.localeCompare(b.storeName);
+                                    }
+                                    return sortDirection === 'asc' ? comparison : -comparison;
+                                  })
+                                  .map((employee, idx) => (
+                                    <tr key={`${employee.employeeName}-${idx}`}>
+                                      <td className="w-1/3 py-3 text-sm font-medium text-gray-900">
+                                        {employee.employeeName}
+                                      </td>
+                                      <td className="w-1/3 py-3 text-sm text-gray-900">
+                                        {employee.totalDays} {employee.totalDays === 1 ? 'Tag' : 'Tage'} ({employee.ranges.map((range, i) => (
+                                          <span key={i}>
+                                            {i > 0 && ', '}
+                                            {formatDateRange(range.start, range.end)}
+                                          </span>
+                                        ))})
+                                      </td>
+                                      <td className="w-1/3 py-3 text-sm text-gray-900">
+                                        {employee.storeName}
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    </AuthGuard>
+  );
+}

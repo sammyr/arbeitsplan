@@ -11,10 +11,12 @@ import MainLayout from '@/components/MainLayout'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Arbeitsplan',
-  description: 'Arbeitsplan Management System',
+  title: 'Dienstplan Manager',
+  description: 'Effiziente Verwaltung von Arbeitszeiten und Schichten',
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },

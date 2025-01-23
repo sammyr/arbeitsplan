@@ -1,115 +1,183 @@
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import { MdCalendarMonth, MdPeople, MdAccessTime, MdSettings, MdBarChart, MdAssessment, MdBook, MdHelp } from 'react-icons/md';
+import { 
+  ChartBarIcon, 
+  CalendarIcon, 
+  ClockIcon,
+  BuildingOfficeIcon,
+  UserGroupIcon,
+  CakeIcon,
+  BeakerIcon,
+  ChartPieIcon,
+  DocumentTextIcon,
+  ClipboardDocumentListIcon,
+  CogIcon,
+  QuestionMarkCircleIcon,
+  HomeIcon
+} from '@heroicons/react/24/outline';
+import type { ForwardRefExoticComponent, SVGProps, RefAttributes } from 'react';
 
-export const metadata = {
-  title: 'Arbeitsplan - Effiziente Mitarbeiterplanung',
-  description: 'Verwalten Sie Ihre Mitarbeiterpläne einfach und effizient mit unserem interaktiven Arbeitsplan-System.',
-};
+interface Feature {
+  name: string;
+  description: string;
+  href: string;
+  icon: ForwardRefExoticComponent<SVGProps<SVGSVGElement> & RefAttributes<SVGSVGElement>>;
+  color: string;
+}
 
-const features = [
-  {
-    name: 'Dashboard',
-    description: 'Überblick über wichtige Kennzahlen und aktuelle Aktivitäten.',
-    icon: MdBarChart,
-    href: '/dashboard',
-  },
-  {
-    name: 'Arbeitsplan',
-    description: 'Anzeigen und Verwalten von Mitarbeiterplänen in einem interaktiven Kalender.',
-    icon: MdCalendarMonth,
-    href: '/arbeitsplan',
-  },
-  {
-    name: 'Mitarbeiter-verwaltung',
-    description: 'Hinzufügen, Bearbeiten und Verwalten von Mitarbeiterinformationen.',
-    icon: MdPeople,
-    href: '/mitarbeiter',
-  },
-  {
-    name: 'Schichten',
-    description: 'Konfigurieren und Verwalten von Arbeitszeitplänen.',
-    icon: MdAccessTime,
-    href: '/schichten',
-  },
-  {
-    name: 'Auswertungen',
-    description: 'Detaillierte Analysen und Berichte der Arbeitszeiten.',
-    icon: MdAssessment,
-    href: '/auswertungen',
-  },
-  {
-    name: 'Logbuch',
-    description: 'Protokollierung und Übersicht aller wichtigen Ereignisse.',
-    icon: MdBook,
-    href: '/logs',
-  },
-  {
-    name: 'Import/Export',
-    description: 'Daten importieren und exportieren.',
-    icon: MdHelp,
-    href: '/import',
-  },
-  {
-    name: 'Einstellungen',
-    description: 'Konfigurieren Sie E-Mail-Benachrichtigungen und andere Systemeinstellungen.',
-    icon: MdSettings,
-    href: '/einstellungen',
-  },
-];
+export default function HomePage() {
+  const { user } = useAuth();
 
-export default function Home() {
+  const features: Feature[] = [
+    {
+      name: 'Dashboard',
+      description: 'Übersichtliche Darstellung aller wichtigen Kennzahlen und Aktivitäten.',
+      href: '/dashboard',
+      icon: ChartBarIcon,
+      color: 'bg-blue-500'
+    },
+    {
+      name: 'Arbeitsplan',
+      description: 'Erstellen und verwalten Sie die Arbeitspläne für alle Mitarbeiter.',
+      href: '/arbeitsplan',
+      icon: CalendarIcon,
+      color: 'bg-green-500'
+    },
+    {
+      name: 'Schichten',
+      description: 'Definieren und organisieren Sie verschiedene Schichtmodelle.',
+      href: '/schichten',
+      icon: ClockIcon,
+      color: 'bg-purple-500'
+    },
+    {
+      name: 'Filialen',
+      description: 'Verwalten Sie alle Ihre Standorte und deren spezifische Einstellungen.',
+      href: '/filialen',
+      icon: BuildingOfficeIcon,
+      color: 'bg-yellow-500'
+    },
+    {
+      name: 'Mitarbeiter',
+      description: 'Mitarbeiterverwaltung mit Kontaktdaten und Verfügbarkeiten.',
+      href: '/mitarbeiter',
+      icon: UserGroupIcon,
+      color: 'bg-red-500'
+    },
+    {
+      name: 'Geburtstage',
+      description: 'Behalten Sie den Überblick über die Geburtstage Ihrer Mitarbeiter.',
+      href: '/geburtstage',
+      icon: CakeIcon,
+      color: 'bg-pink-500'
+    },
+    {
+      name: 'Urlaubstage',
+      description: 'Übersicht der Urlaubstage Ihrer Mitarbeiter.',
+      href: '/urlaubstage',
+      icon: BeakerIcon,
+      color: 'bg-indigo-500'
+    },
+    {
+      name: 'Auswertungen',
+      description: 'Detaillierte Analysen und Berichte für fundierte Entscheidungen.',
+      href: '/auswertungen',
+      icon: ChartPieIcon,
+      color: 'bg-orange-500'
+    },
+    {
+      name: 'Logbuch',
+      description: 'Protokollierung aller wichtigen Aktivitäten und Änderungen.',
+      href: '/logbuch',
+      icon: DocumentTextIcon,
+      color: 'bg-teal-500'
+    }
+  ];
+
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="bg-white">
-      <div className="relative isolate px-6 pt-14 lg:px-8">
-        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
-          <div
-            className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
-            style={{
-              clipPath:
-                'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
-            }}
-          />
+    <div className="py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-4">
+            Willkommen im Dienstplan Manager
+          </h1>
+          <p className="text-lg text-gray-600">
+            Effiziente Verwaltung von Arbeitszeiten und Schichten
+          </p>
         </div>
-        <div className="mx-auto max-w-4xl py-12">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Willkommen beim <span>Arbeitsplan Manager</span>
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Verwalten Sie effizient die Arbeitszeitpläne und Mitarbeiterinformationen
-            </p>
-          </div>
 
-          <div className="mt-16">
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature) => (
-                <Link
-                  key={feature.name}
-                  href={feature.href}
-                  className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <Link
+              key={feature.name}
+              href={feature.href}
+              className="group relative rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300"
+            >
+              <div className="flex items-center space-x-4">
+                <div className={`${feature.color} rounded-lg p-3`}>
+                  <feature.icon className="h-6 w-6 text-white" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-600">
+                    {feature.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-500">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center text-sm text-gray-500">
+                <span className="group-hover:underline">Öffnen</span>
+                <svg 
+                  className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <feature.icon className="h-10 w-10 text-emerald-500" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">{feature.name}</h2>
-                      <p className="mt-2 text-sm text-gray-600">{feature.description}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+          ))}
         </div>
-        <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
-          <div
-            className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]"
-            style={{
-              clipPath:
-                'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
-            }}
-          />
+
+        {/* Quick Actions */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Schnellzugriff</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/arbeitsplan"
+              className="flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-3 text-base font-medium text-gray-900 shadow-sm hover:bg-gray-50"
+            >
+              Arbeitsplan erstellen
+            </Link>
+            <Link
+              href="/mitarbeiter"
+              className="flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-3 text-base font-medium text-gray-900 shadow-sm hover:bg-gray-50"
+            >
+              Mitarbeiter verwalten
+            </Link>
+            <Link
+              href="/urlaubstage"
+              className="flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-3 text-base font-medium text-gray-900 shadow-sm hover:bg-gray-50"
+            >
+              Urlaube einsehen
+            </Link>
+            <Link
+              href="/auswertungen"
+              className="flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-3 text-base font-medium text-gray-900 shadow-sm hover:bg-gray-50"
+            >
+              Auswertungen anzeigen
+            </Link>
+          </div>
         </div>
       </div>
     </div>

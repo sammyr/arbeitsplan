@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="6" fill="#10B981"/>
-  <text x="8" y="24" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white">
-    D
-  </text>
+  <rect width="32" height="32" rx="8" fill="#059669"/>
+  <path d="M8 8H14C17.3137 8 20 10.6863 20 14C20 17.3137 17.3137 20 14 20H8V8Z" fill="white"/>
+  <path d="M18 12H24V24L21 20L18 24V12Z" fill="white"/>
 </svg>
