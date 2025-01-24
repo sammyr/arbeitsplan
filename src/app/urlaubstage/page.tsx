@@ -202,10 +202,10 @@ export default function HolidaysPage() {
           const monthData = groupedEmployees
             .sort((a, b) => b.totalDays - a.totalDays)
             .map(employee => [
+              employee.ranges.map(range => formatDateRange(range.start, range.end)).join(', '),
               getMonthName(parseInt(month)),
               employee.totalDays.toString(),
               employee.employeeName,
-              employee.ranges.map(range => formatDateRange(range.start, range.end)).join(', '),
               employee.storeName
             ] as [string, string, string, string, string]);
           allData = [...allData, ...monthData];
@@ -215,7 +215,7 @@ export default function HolidaysPage() {
     if (allData.length > 0) {
       autoTable(doc, {
         startY: 20,
-        head: [['Monat', 'Tage', 'Mitarbeiter', 'Zeitraum', 'Filiale']],
+        head: [['Zeitraum', 'Monat', 'Tage', 'Mitarbeiter', 'Filiale']],
         body: allData,
         theme: 'grid',
         headStyles: { 
@@ -233,11 +233,11 @@ export default function HolidaysPage() {
           lineColor: [200, 200, 200]
         },
         columnStyles: {
-          0: { cellWidth: 22 },  // Monat
-          1: { cellWidth: 12 },  // Tage
-          2: { cellWidth: 35 },  // Mitarbeiter
-          3: { cellWidth: 'auto' }, // Zeitraum
-          4: { cellWidth: 35 }   // Filiale
+          0: { cellWidth: 'auto' }, // Zeitraum
+          1: { cellWidth: 22 },     // Monat
+          2: { cellWidth: 12 },     // Tage
+          3: { cellWidth: 35 },     // Mitarbeiter
+          4: { cellWidth: 35 }      // Filiale
         },
         margin: { left: 10, right: 10, top: 10 },
         tableWidth: 'auto'
@@ -418,22 +418,22 @@ export default function HolidaysPage() {
                                 <tr>
                                   <th 
                                     scope="col"
-                                    className="w-1/6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                                    onClick={() => handleSort('urlaubstage')}
-                                  >
-                                    <div className="flex items-center gap-1">
-                                      Urlaubstage
-                                      {getSortIcon('urlaubstage')}
-                                    </div>
-                                  </th>
-                                  <th 
-                                    scope="col"
                                     className="w-1/3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
                                     onClick={() => handleSort('zeitraum')}
                                   >
                                     <div className="flex items-center gap-1">
                                       Zeitraum
                                       {getSortIcon('zeitraum')}
+                                    </div>
+                                  </th>
+                                  <th 
+                                    scope="col"
+                                    className="w-1/6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                                    onClick={() => handleSort('urlaubstage')}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      Urlaubstage
+                                      {getSortIcon('urlaubstage')}
                                     </div>
                                   </th>
                                   <th 
@@ -475,9 +475,6 @@ export default function HolidaysPage() {
                                   })
                                   .map((employee, idx) => (
                                     <tr key={`${employee.employeeName}-${idx}`}>
-                                      <td className="w-1/6 py-3 text-sm font-medium text-gray-900">
-                                        {employee.totalDays} {employee.totalDays === 1 ? 'Tag' : 'Tage'}
-                                      </td>
                                       <td className="w-1/3 py-3 text-sm text-gray-900">
                                         {employee.ranges.map((range, i) => (
                                           <span key={i}>
@@ -485,6 +482,9 @@ export default function HolidaysPage() {
                                             {formatDateRange(range.start, range.end)}
                                           </span>
                                         ))}
+                                      </td>
+                                      <td className="w-1/6 py-3 text-sm font-medium text-gray-900">
+                                        {employee.totalDays} {employee.totalDays === 1 ? 'Tag' : 'Tage'}
                                       </td>
                                       <td className="w-1/4 py-3 text-sm text-gray-900">
                                         {employee.employeeName}
