@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, getYear, getMonth } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { dbService } from '@/lib/db';
-import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -47,7 +48,7 @@ interface GroupedHolidays {
   };
 }
 
-type SortField = 'employeeName' | 'urlaubstage' | 'storeName';
+type SortField = 'urlaubstage' | 'employeeName' | 'zeitraum' | 'storeName';
 type SortDirection = 'asc' | 'desc';
 
 export default function HolidaysPage() {
@@ -177,26 +178,73 @@ export default function HolidaysPage() {
       : <ChevronDownIcon className="h-4 w-4" />;
   };
 
-  const handleExportToExcel = () => {
-    const workbook = XLSX.utils.book_new();
-    const data = Object.entries(holidays[selectedYear])
+  const handleExportToPDF = () => {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    doc.setFont('helvetica');
+    
+    // Titel
+    doc.setFontSize(14);
+    doc.text(`Urlaubsübersicht ${selectedYear}`, 14, 15);
+    
+    // Sammle alle Daten
+    let allData: [string, string, string, string, string][] = [];
+    Object.entries(holidays[selectedYear])
       .sort((a, b) => Number(a[0]) - Number(b[0]))
-      .flatMap(([month, entries]) => {
+      .forEach(([month, entries]) => {
         const groupedEmployees = groupHolidaysByEmployee(entries);
-        return Object.values(groupedEmployees).map(employee => ({
-          'Monat': getMonthName(parseInt(month)),
-          'Mitarbeiter': employee.employeeName,
-          'Urlaubstage': `${employee.totalDays} ${employee.totalDays === 1 ? 'Tag' : 'Tage'} (${employee.ranges.map(range => formatDateRange(range.start, range.end)).join(', ')})`,
-          'Filiale': employee.storeName
-        }));
+        if (groupedEmployees.length > 0) {
+          // Sortiere nach Tagen und füge Monatsnamen hinzu
+          const monthData = groupedEmployees
+            .sort((a, b) => b.totalDays - a.totalDays)
+            .map(employee => [
+              getMonthName(parseInt(month)),
+              employee.totalDays.toString(),
+              employee.employeeName,
+              employee.ranges.map(range => formatDateRange(range.start, range.end)).join(', '),
+              employee.storeName
+            ] as [string, string, string, string, string]);
+          allData = [...allData, ...monthData];
+        }
       });
 
-    if (data.length > 0) {
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, `Urlaubstage ${selectedYear}`);
+    if (allData.length > 0) {
+      autoTable(doc, {
+        startY: 20,
+        head: [['Monat', 'Tage', 'Mitarbeiter', 'Zeitraum', 'Filiale']],
+        body: allData,
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [76, 175, 80],
+          textColor: [255, 255, 255],
+          fontSize: 9,
+          fontStyle: 'bold',
+          cellPadding: 1.5,
+          lineWidth: 0.1
+        },
+        styles: { 
+          fontSize: 10,
+          cellPadding: 1.5,
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
+        },
+        columnStyles: {
+          0: { cellWidth: 22 },  // Monat
+          1: { cellWidth: 12 },  // Tage
+          2: { cellWidth: 35 },  // Mitarbeiter
+          3: { cellWidth: 'auto' }, // Zeitraum
+          4: { cellWidth: 35 }   // Filiale
+        },
+        margin: { left: 10, right: 10, top: 10 },
+        tableWidth: 'auto'
+      });
     }
-
-    XLSX.writeFile(workbook, `Urlaubstage_${selectedYear}.xlsx`);
+    
+    doc.save(`Urlaubsuebersicht_${selectedYear}.pdf`);
   };
 
   const groupHolidaysByEmployee = (entries: HolidayEntry[]) => {
@@ -338,13 +386,13 @@ export default function HolidaysPage() {
                     {/* Right side - Export Button */}
                     <div className="flex items-center gap-4">
                       <button
-                        onClick={handleExportToExcel}
+                        onClick={handleExportToPDF}
                         className="inline-flex items-center gap-2 px-4 py-2 border border-green-500 text-green-500 rounded-lg hover:bg-green-50 transition-colors"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        Excel Export
+                        PDF Export
                       </button>
                     </div>
                   </div>
@@ -370,17 +418,7 @@ export default function HolidaysPage() {
                                 <tr>
                                   <th 
                                     scope="col"
-                                    className="w-1/3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                                    onClick={() => handleSort('employeeName')}
-                                  >
-                                    <div className="flex items-center gap-1">
-                                      Mitarbeiter
-                                      {getSortIcon('employeeName')}
-                                    </div>
-                                  </th>
-                                  <th 
-                                    scope="col"
-                                    className="w-1/3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                                    className="w-1/6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
                                     onClick={() => handleSort('urlaubstage')}
                                   >
                                     <div className="flex items-center gap-1">
@@ -391,6 +429,26 @@ export default function HolidaysPage() {
                                   <th 
                                     scope="col"
                                     className="w-1/3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                                    onClick={() => handleSort('zeitraum')}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      Zeitraum
+                                      {getSortIcon('zeitraum')}
+                                    </div>
+                                  </th>
+                                  <th 
+                                    scope="col"
+                                    className="w-1/4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                                    onClick={() => handleSort('employeeName')}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      Mitarbeiter
+                                      {getSortIcon('employeeName')}
+                                    </div>
+                                  </th>
+                                  <th 
+                                    scope="col"
+                                    className="w-1/4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
                                     onClick={() => handleSort('storeName')}
                                   >
                                     <div className="flex items-center gap-1">
@@ -408,6 +466,8 @@ export default function HolidaysPage() {
                                       comparison = a.employeeName.localeCompare(b.employeeName);
                                     } else if (sortField === 'urlaubstage') {
                                       comparison = a.totalDays - b.totalDays;
+                                    } else if (sortField === 'zeitraum') {
+                                      comparison = a.ranges[0]?.start.getTime() - b.ranges[0]?.start.getTime() || 0;
                                     } else if (sortField === 'storeName') {
                                       comparison = a.storeName.localeCompare(b.storeName);
                                     }
@@ -415,18 +475,21 @@ export default function HolidaysPage() {
                                   })
                                   .map((employee, idx) => (
                                     <tr key={`${employee.employeeName}-${idx}`}>
-                                      <td className="w-1/3 py-3 text-sm font-medium text-gray-900">
-                                        {employee.employeeName}
+                                      <td className="w-1/6 py-3 text-sm font-medium text-gray-900">
+                                        {employee.totalDays} {employee.totalDays === 1 ? 'Tag' : 'Tage'}
                                       </td>
                                       <td className="w-1/3 py-3 text-sm text-gray-900">
-                                        {employee.totalDays} {employee.totalDays === 1 ? 'Tag' : 'Tage'} ({employee.ranges.map((range, i) => (
+                                        {employee.ranges.map((range, i) => (
                                           <span key={i}>
                                             {i > 0 && ', '}
                                             {formatDateRange(range.start, range.end)}
                                           </span>
-                                        ))})
+                                        ))}
                                       </td>
-                                      <td className="w-1/3 py-3 text-sm text-gray-900">
+                                      <td className="w-1/4 py-3 text-sm text-gray-900">
+                                        {employee.employeeName}
+                                      </td>
+                                      <td className="w-1/4 py-3 text-sm text-gray-900">
                                         {employee.storeName}
                                       </td>
                                     </tr>

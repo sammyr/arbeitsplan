@@ -105,13 +105,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="fixed inset-0 flex z-50">
               {/* Sidebar mobile container */}
               <div className="relative flex w-full max-w-xs flex-1">
-                <div className="absolute right-0 top-0 flex w-16 justify-center pt-5">
+                {/* Close button */}
+                <div className="absolute right-0 top-0 z-50 flex w-16 justify-center pt-5">
                   <button
                     type="button"
-                    className="-m-2.5 p-2.5"
+                    className="-m-2.5 p-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <span className="sr-only">Close sidebar</span>
+                    <span className="sr-only">Menü schließen</span>
                     <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
                   </button>
                 </div>
