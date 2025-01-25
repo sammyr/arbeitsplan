@@ -202,11 +202,11 @@ export default function HolidaysPage() {
           const monthData = groupedEmployees
             .sort((a, b) => b.totalDays - a.totalDays)
             .map(employee => [
-              employee.ranges.map(range => formatDateRange(range.start, range.end)).join(', '),
+              employee.ranges.map(range => formatDateRange(range.start, range.end)).join(' | '),
               getMonthName(parseInt(month)),
               employee.totalDays.toString(),
               employee.employeeName,
-              employee.storeName
+              Array.from(new Set(employee.ranges.map(range => range.storeName))).join(' | ')
             ] as [string, string, string, string, string]);
           allData = [...allData, ...monthData];
         }
@@ -249,55 +249,96 @@ export default function HolidaysPage() {
 
   const groupHolidaysByEmployee = (entries: HolidayEntry[]) => {
     const grouped = new Map<string, {
+      employeeId: string;
       employeeName: string;
-      storeName: string;
-      dates: Date[]
+      dateStores: Map<string, Set<string>>; // Map von Datum zu Set von Filialen
     }>();
 
     entries.forEach(entry => {
-      const key = `${entry.employeeId}-${entry.storeId}`;
+      const key = entry.employeeId;
       if (!grouped.has(key)) {
         grouped.set(key, {
+          employeeId: entry.employeeId,
           employeeName: entry.employeeName,
-          storeName: entry.storeName,
-          dates: []
+          dateStores: new Map()
         });
       }
-      grouped.get(key)?.dates.push(parseISO(entry.date));
+      const group = grouped.get(key)!;
+      const dateKey = entry.date;
+      if (!group.dateStores.has(dateKey)) {
+        group.dateStores.set(dateKey, new Set());
+      }
+      group.dateStores.get(dateKey)!.add(entry.storeName);
     });
 
-    return Array.from(grouped.values()).map(({ employeeName, storeName, dates }) => {
+    return Array.from(grouped.values()).map(({ employeeName, dateStores }) => {
+      // Konvertiere die Daten in ein Array von Datum-Objekte
+      const dates = Array.from(dateStores.keys()).map(date => parseISO(date));
       dates.sort((a, b) => a.getTime() - b.getTime());
       
+      // Sammle alle einzigartigen Filialen
+      const allStores = new Set<string>();
+      dateStores.forEach(stores => {
+        stores.forEach(store => allStores.add(store));
+      });
+      
       // Finde zusammenhängende Zeiträume
-      const ranges: { start: Date; end: Date; }[] = [];
-      let currentRange: { start: Date; end: Date; } | null = null;
+      const ranges: { start: Date; end: Date; stores: string[] }[] = [];
+      let currentRange: { start: Date; end: Date; stores: Set<string> } | null = null;
 
-      dates.forEach(date => {
+      dates.forEach((date, index) => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const currentStores = dateStores.get(dateStr)!;
+
         if (!currentRange) {
-          currentRange = { start: date, end: date };
+          currentRange = { 
+            start: date, 
+            end: date, 
+            stores: currentStores
+          };
         } else {
           const nextDay = new Date(currentRange.end);
           nextDay.setDate(nextDay.getDate() + 1);
           
-          if (date.getTime() === nextDay.getTime()) {
+          // Prüfe ob die Filialen identisch sind
+          const sameStores = Array.from(currentStores).every(store => 
+            currentRange!.stores.has(store)) && 
+            currentRange!.stores.size === currentStores.size;
+          
+          if (date.getTime() === nextDay.getTime() && sameStores) {
             currentRange.end = date;
           } else {
-            ranges.push(currentRange);
-            currentRange = { start: date, end: date };
+            ranges.push({
+              start: currentRange.start,
+              end: currentRange.end,
+              stores: Array.from(currentRange.stores).sort()
+            });
+            currentRange = { 
+              start: date, 
+              end: date, 
+              stores: currentStores
+            };
           }
         }
+        
+        // Füge den letzten Bereich hinzu
+        if (index === dates.length - 1 && currentRange) {
+          ranges.push({
+            start: currentRange.start,
+            end: currentRange.end,
+            stores: Array.from(currentRange.stores).sort()
+          });
+        }
       });
-      
-      if (currentRange) {
-        ranges.push(currentRange);
-      }
 
       return {
         employeeName,
-        storeName,
-        ranges,
-        totalDays: dates.length
+        ranges: ranges.map(range => ({
+          start: range.start,
+          end: range.end,
+          storeName: range.stores.join(', ')
+        })),
+        totalDays: dates.length // Jeder Tag wird nur einmal gezählt
       };
     });
   };
@@ -469,7 +510,10 @@ export default function HolidaysPage() {
                                     } else if (sortField === 'zeitraum') {
                                       comparison = a.ranges[0]?.start.getTime() - b.ranges[0]?.start.getTime() || 0;
                                     } else if (sortField === 'storeName') {
-                                      comparison = a.storeName.localeCompare(b.storeName);
+                                      // Vergleiche die Filialnamen des ersten Zeitraums
+                                      const aStore = a.ranges[0]?.storeName || '';
+                                      const bStore = b.ranges[0]?.storeName || '';
+                                      comparison = aStore.localeCompare(bStore);
                                     }
                                     return sortDirection === 'asc' ? comparison : -comparison;
                                   })
@@ -478,7 +522,7 @@ export default function HolidaysPage() {
                                       <td className="w-1/3 py-3 text-sm text-gray-900">
                                         {employee.ranges.map((range, i) => (
                                           <span key={i}>
-                                            {i > 0 && ', '}
+                                            {i > 0 && ' | '}
                                             {formatDateRange(range.start, range.end)}
                                           </span>
                                         ))}
@@ -490,7 +534,7 @@ export default function HolidaysPage() {
                                         {employee.employeeName}
                                       </td>
                                       <td className="w-1/4 py-3 text-sm text-gray-900">
-                                        {employee.storeName}
+                                        {Array.from(new Set(employee.ranges.map(range => range.storeName))).join(', ')}
                                       </td>
                                     </tr>
                                   ))}
