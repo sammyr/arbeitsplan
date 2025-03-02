@@ -11,7 +11,6 @@ import { ShiftAssignment } from '@/types/shift-assignment';
 import { dbService } from '@/lib/db';
 import { collection, query, where, doc, getDocs, setDoc, deleteDoc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import ShiftAssignmentModal from '@/components/ShiftAssignmentModal';
 import { exportCalendarToPDF } from '@/utils/pdfUtils';

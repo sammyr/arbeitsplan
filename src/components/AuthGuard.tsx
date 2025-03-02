@@ -48,7 +48,7 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
+        {/* Ladeanimation entfernt, Container beibehalten */}
       </div>
     );
   }

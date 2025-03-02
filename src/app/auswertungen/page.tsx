@@ -471,11 +471,7 @@ export default function AuswertungenPage() {
             {/* Content */}
             {isLoading ? (
               <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-4 bg-slate-200 rounded w-1/4"></div>
-                  <div className="h-4 bg-slate-200 rounded w-1/2"></div>
-                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                </div>
+                {/* Ladeanimation entfernt, Container beibehalten */}
               </div>
             ) : assignments.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-6">
