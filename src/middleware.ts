@@ -10,7 +10,7 @@ const secretKey = new TextEncoder().encode(JWT_SECRET);
 const AUTH_ENABLED = false;
 
 // Add paths that don't require authentication
-const publicPaths = ['/auth/login', '/auth/register', '/auth/passwort'];
+const publicPaths = ['/', '/auth/login', '/auth/register', '/auth/passwort', '/home', '/impressum', '/datenschutz'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,9 +18,9 @@ export async function middleware(request: NextRequest) {
   // Debugging
   console.log('Current pathname:', pathname);
   
-  // Check if path starts with /auth/
-  if (pathname.startsWith('/auth/')) {
-    console.log('Auth path detected, allowing access');
+  // Check if path starts with /auth/ or is in publicPaths
+  if (pathname.startsWith('/auth/') || publicPaths.includes(pathname)) {
+    console.log('Public path detected, allowing access');
     return NextResponse.next();
   }
   
